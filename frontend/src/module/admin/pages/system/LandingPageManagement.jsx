@@ -36,6 +36,7 @@ export default function LandingPageManagement() {
   const [exploreMoreDeleting, setExploreMoreDeleting] = useState(null)
   const [exploreMoreLabel, setExploreMoreLabel] = useState("")
   const [exploreMoreLink, setExploreMoreLink] = useState("")
+  const [exploreIconsUploading, setExploreIconsUploading] = useState({})
   const exploreMoreFileInputRef = useRef(null)
 
   // Under 250 Banners
@@ -150,6 +151,8 @@ export default function LandingPageManagement() {
         fetchTop10Restaurants()
       } else if (exploreMoreSubTab === 'gourmet') {
         fetchGourmetRestaurants()
+      } else if (exploreMoreSubTab === 'icons') {
+        fetchExploreMore()
       }
     }
   }, [activeTab, exploreMoreSubTab])
@@ -369,7 +372,7 @@ export default function LandingPageManagement() {
     if (!restaurantSearchQuery.trim()) return true
     const query = restaurantSearchQuery.toLowerCase()
     return restaurant.name?.toLowerCase().includes(query) ||
-           restaurant.restaurantId?.toLowerCase().includes(query)
+      restaurant.restaurantId?.toLowerCase().includes(query)
   })
 
   // ==================== CATEGORIES ====================
@@ -675,6 +678,49 @@ export default function LandingPageManagement() {
       }
     } catch (err) {
       setErrorSafely(err.response?.data?.message || 'Failed to update explore more status.')
+    }
+  }
+
+
+
+  const handleIconUpdate = async (file, label, link, itemId) => {
+    if (!file) return
+
+    // Find existing item by label
+    const existingItem = exploreMore.find(item => item.label?.toLowerCase() === label.toLowerCase())
+
+    // Create FormData
+    const formData = new FormData()
+    formData.append('image', file)
+
+    try {
+      setExploreIconsUploading(prev => ({ ...prev, [itemId]: true }))
+      let res;
+
+      if (existingItem) {
+        // Update existing
+        res = await api.patch(`/hero-banners/landing/explore-more/${existingItem._id}`, formData, getAuthConfig({
+          headers: { 'Content-Type': 'multipart/form-data' }
+        }))
+      } else {
+        // Create new
+        formData.append('label', label)
+        formData.append('link', link)
+        res = await api.post('/hero-banners/landing/explore-more', formData, getAuthConfig({
+          headers: { 'Content-Type': 'multipart/form-data' }
+        }))
+      }
+
+      if (res.data?.success) {
+        setSuccess(`${label} icon updated successfully!`)
+        setTimeout(() => setSuccess(null), 3000)
+        await fetchExploreMore()
+      }
+    } catch (err) {
+      console.error('Upload failed', err)
+      setErrorSafely(err.response?.data?.message || 'Failed to update icon')
+    } finally {
+      setExploreIconsUploading(prev => ({ ...prev, [itemId]: false }))
     }
   }
 
@@ -1226,6 +1272,7 @@ export default function LandingPageManagement() {
   ]
 
   const exploreMoreTabs = [
+    { id: 'icons', label: 'Icons', icon: ImageIcon },
     { id: 'top-10', label: 'Top 10', icon: Trophy },
     { id: 'gourmet', label: 'Gourmet', icon: ChefHat },
   ]
@@ -1384,7 +1431,7 @@ export default function LandingPageManagement() {
                             </button>
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <button 
+                            <button
                               onClick={() => {
                                 setSelectedBannerId(banner._id)
                                 setSelectedRestaurantIds(banner.linkedRestaurants?.map(r => r._id || r) || [])
@@ -1674,11 +1721,10 @@ export default function LandingPageManagement() {
                     <button
                       key={tab.id}
                       onClick={() => setExploreMoreSubTab(tab.id)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-                        exploreMoreSubTab === tab.id
-                          ? 'bg-blue-500 text-white'
-                          : 'text-slate-600 hover:bg-slate-100'
-                      }`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${exploreMoreSubTab === tab.id
+                        ? 'bg-blue-500 text-white'
+                        : 'text-slate-600 hover:bg-slate-100'
+                        }`}
                     >
                       <Icon className="w-4 h-4" />
                       {tab.label}
@@ -1688,7 +1734,72 @@ export default function LandingPageManagement() {
               </div>
             </div>
 
-            {/* Top 10 Tab Content */}
+
+
+            {/* Icons Tab Content */}
+            {exploreMoreSubTab === 'icons' && (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h2 className="text-lg font-bold text-slate-900 mb-6">Manage Explore More Icons</h2>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[
+                    { id: 'offers', label: 'Offers', link: '/user/offers' },
+                    { id: 'gourmet', label: 'Gourmet', link: '/user/gourmet' },
+                    { id: 'top10', label: 'Top 10', link: '/user/top-10' },
+                    { id: 'collection', label: 'Collections', link: '/user/profile/favorites' }
+                  ].map((item) => {
+                    // Find matching item from DB
+                    const dbItem = exploreMore.find(i => i.label?.toLowerCase() === item.label.toLowerCase())
+
+                    return (
+                      <div key={item.id} className="border border-slate-200 rounded-lg p-4 flex flex-col items-center relative">
+                        <span className="text-sm font-semibold text-slate-700 mb-3">{item.label}</span>
+
+                        <div className="w-24 h-24 mb-4 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden relative group">
+                          {dbItem?.imageUrl ? (
+                            <img
+                              src={dbItem.imageUrl}
+                              alt={item.label}
+                              className="w-full h-full object-contain p-2"
+                            />
+                          ) : (
+                            <ImageIcon className="w-8 h-8 text-slate-300" />
+                          )}
+
+                          {exploreIconsUploading[item.id] && (
+                            <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
+                              <Loader2 className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="w-full mt-auto">
+                          <input
+                            type="file"
+                            id={`file-${item.id}`}
+                            className="hidden"
+                            accept="image/*"
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                handleIconUpdate(e.target.files[0], item.label, item.link, item.id)
+                              }
+                            }}
+                            disabled={exploreIconsUploading[item.id]}
+                          />
+                          <label
+                            htmlFor={`file-${item.id}`}
+                            className={`w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer ${exploreIconsUploading[item.id] ? 'opacity-50 pointer-events-none' : ''}`}
+                          >
+                            <Upload className="w-3 h-3" />
+                            {dbItem ? 'Change Icon' : 'Upload Icon'}
+                          </label>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
             {exploreMoreSubTab === 'top-10' && (
               <>
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
@@ -1725,8 +1836,8 @@ export default function LandingPageManagement() {
                         className="mt-1"
                       />
                     </div>
-                    <Button 
-                      onClick={handleAddTop10Restaurant} 
+                    <Button
+                      onClick={handleAddTop10Restaurant}
                       disabled={!selectedRestaurantTop10 || !selectedRank}
                       className="bg-blue-500 hover:bg-blue-600 text-white"
                     >
@@ -1822,8 +1933,8 @@ export default function LandingPageManagement() {
                           ))}
                       </select>
                     </div>
-                    <Button 
-                      onClick={handleAddGourmetRestaurant} 
+                    <Button
+                      onClick={handleAddGourmetRestaurant}
                       disabled={!selectedRestaurantGourmet}
                       className="bg-blue-500 hover:bg-blue-600 text-white"
                     >
@@ -1852,16 +1963,16 @@ export default function LandingPageManagement() {
                           const coverImages = item.restaurant?.coverImages && item.restaurant.coverImages.length > 0
                             ? item.restaurant.coverImages.map(img => img.url || img).filter(Boolean)
                             : []
-                          
+
                           const menuImages = item.restaurant?.menuImages && item.restaurant.menuImages.length > 0
                             ? item.restaurant.menuImages.map(img => img.url || img).filter(Boolean)
                             : []
-                          
+
                           const restaurantImage = coverImages.length > 0
                             ? coverImages[0]
                             : (menuImages.length > 0
-                                ? menuImages[0]
-                                : (item.restaurant?.profileImage?.url || "https://via.placeholder.com/400"))
+                              ? menuImages[0]
+                              : (item.restaurant?.profileImage?.url || "https://via.placeholder.com/400"))
 
                           return (
                             <div key={item._id} className="border border-slate-200 rounded-lg overflow-hidden">
@@ -1913,7 +2024,7 @@ export default function LandingPageManagement() {
                 Select restaurants that will be linked to this banner. When users click on this banner, they will be redirected to the selected restaurants.
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="flex-1 overflow-hidden flex flex-col">
               {/* Search Bar and Selected Count */}
               <div className="px-6 pt-4 pb-3 space-y-3 bg-slate-50 border-b border-slate-200">
@@ -1964,15 +2075,14 @@ export default function LandingPageManagement() {
                     {filteredRestaurantsForModal.map((restaurant) => {
                       const isSelected = selectedRestaurantIds.includes(restaurant._id)
                       const profileImageUrl = restaurant.profileImage?.url || restaurant.profileImage || null
-                      
+
                       return (
                         <div
                           key={restaurant._id}
-                          className={`px-6 py-4 transition-all cursor-pointer ${
-                            isSelected 
-                              ? 'bg-blue-50 border-l-4 border-l-blue-500' 
-                              : 'hover:bg-slate-50'
-                          }`}
+                          className={`px-6 py-4 transition-all cursor-pointer ${isSelected
+                            ? 'bg-blue-50 border-l-4 border-l-blue-500'
+                            : 'hover:bg-slate-50'
+                            }`}
                           onClick={() => toggleRestaurantSelection(restaurant._id)}
                         >
                           <div className="flex items-center gap-4">
@@ -1984,7 +2094,7 @@ export default function LandingPageManagement() {
                                 className="w-5 h-5"
                               />
                             </div>
-                            
+
                             {/* Restaurant Image */}
                             <div className="flex-shrink-0">
                               {profileImageUrl ? (
@@ -1998,20 +2108,18 @@ export default function LandingPageManagement() {
                                   }}
                                 />
                               ) : null}
-                              <div 
-                                className={`w-16 h-16 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg ${
-                                  profileImageUrl ? 'hidden' : 'flex'
-                                }`}
+                              <div
+                                className={`w-16 h-16 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg ${profileImageUrl ? 'hidden' : 'flex'
+                                  }`}
                               >
                                 {restaurant.name?.charAt(0)?.toUpperCase() || 'R'}
                               </div>
                             </div>
-                            
+
                             {/* Restaurant Info */}
                             <div className="flex-1 min-w-0">
-                              <h3 className={`font-semibold text-base mb-1 ${
-                                isSelected ? 'text-blue-900' : 'text-slate-900'
-                              }`}>
+                              <h3 className={`font-semibold text-base mb-1 ${isSelected ? 'text-blue-900' : 'text-slate-900'
+                                }`}>
                                 {restaurant.name || 'Unnamed Restaurant'}
                               </h3>
                               <p className="text-sm text-slate-500 truncate">
@@ -2024,7 +2132,7 @@ export default function LandingPageManagement() {
                                 </div>
                               )}
                             </div>
-                            
+
                             {/* Selected Indicator */}
                             {isSelected && (
                               <div className="flex-shrink-0">
@@ -2082,8 +2190,8 @@ export default function LandingPageManagement() {
           </DialogContent>
         </Dialog>
 
-      </div>
-    </div>
+      </div >
+    </div >
   )
 }
 

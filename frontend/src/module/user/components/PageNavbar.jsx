@@ -918,13 +918,34 @@ export default function PageNavbar({
 
   return (
     <nav
-      className={`relative ${zIndexClass} w-full px-1 pr-2 sm:px-2 sm:pr-3 md:px-3 lg:px-6 xl:px-8 py-1.5 sm:py-3 lg:py-4`}
+      className={`relative ${zIndexClass} w-full px-3 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3`}
       onClick={onNavClick}
     >
-      <div className="flex items-center justify-between gap-2 sm:gap-3 md:gap-4 lg:gap-6 max-w-7xl mx-auto">
-        {/* Left: Location - Hidden on desktop, shown on mobile */}
-        <div className="flex md:hidden items-center gap-3 sm:gap-4 min-w-0">
-          {/* Location Button */}
+      <div className="flex items-center justify-between max-w-7xl mx-auto">
+
+        {/* Left: Company Logo */}
+        <Link to="/user" className="flex-shrink-0 mr-3 sm:mr-4">
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt="Company Logo"
+              className="h-10 w-auto sm:h-12 md:h-14 object-contain scale-[1.8] sm:scale-[2] origin-left"
+              crossOrigin="anonymous"
+              onError={(e) => {
+                e.target.src = appzetoFoodLogo
+              }}
+            />
+          ) : (
+            <img
+              src={appzetoFoodLogo}
+              alt={`${companyName} Logo`}
+              className="h-10 w-auto sm:h-12 md:h-14 object-contain scale-[1.8] sm:scale-[2] origin-left"
+            />
+          )}
+        </Link>
+
+        {/* Center: Location Selector (Centered) */}
+        <div className="flex-1 flex items-center justify-center min-w-0 absolute left-1/2 -translate-x-1/2">
           <Button
             variant="ghost"
             onClick={handleLocationClick}
@@ -932,21 +953,19 @@ export default function PageNavbar({
             className="h-auto px-0 py-0 hover:bg-transparent transition-colors flex-shrink-0"
           >
             {loading ? (
-              <span className={`text-sm font-bold ${textColorClass} ${textColor === "white" ? "drop-shadow-lg" : ""}`}>
+              <span className={`text-sm font-bold ${textColorClass}`}>
                 Loading...
               </span>
             ) : (
-              <div className="flex flex-col items-start min-w-0">
-                <div className="flex items-center gap-1.5">
-
-                  <span className={`text-md sm:text-lg font-bold ${textColorClass} whitespace-nowrap ${textColor === "white" ? "drop-shadow-lg" : ""}`}>
+              <div className="flex flex-col items-center min-w-0">
+                <div className="flex items-center justify-center gap-1">
+                  <span className={`text-sm sm:text-base md:text-lg font-bold ${textColorClass} truncate max-w-[140px] sm:max-w-[200px]`}>
                     {mainLocationName}
                   </span>
-                  <ChevronDown className={`h-4 w-4 sm:h-5 sm:w-5 ${textColorClass} flex-shrink-0 ${textColor === "white" ? "drop-shadow-lg" : ""}`} strokeWidth={2.5} />
+                  <ChevronDown className={`h-3 w-3 sm:h-4 sm:w-4 ${textColorClass} flex-shrink-0`} strokeWidth={2.5} />
                 </div>
-                {/* Show sub location (city, state) in second line */}
                 {subLocationName && (
-                  <span className={`text-xs font-bold ${textColorClass}${textColor === "white" ? "/90" : ""} whitespace-nowrap mt-0.5 ${textColor === "white" ? "drop-shadow-md" : ""}`}>
+                  <span className={`text-[10px] sm:text-xs font-medium ${textColorClass}/80 truncate max-w-[140px] sm:max-w-[200px] text-center`}>
                     {subLocationName}
                   </span>
                 )}
@@ -955,31 +974,8 @@ export default function PageNavbar({
           </Button>
         </div>
 
-        {/* Center: Company Logo or Name - Show on all screen sizes */}
-        <Link to="/user" className="flex items-center justify-center">
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt="Company Logo"
-              className="h-12 w-20 mr-3 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain"
-              crossOrigin="anonymous"
-              onError={(e) => {
-                // Fallback to default logo if API logo fails
-                e.target.src = appzetoFoodLogo
-              }}
-            />
-          ) : (
-            <img
-              src={appzetoFoodLogo}
-              alt={`${companyName} Logo`}
-              className="h-12 w-20 mr-3 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain"
-            />
-          )}
-        </Link>
-
-        {/* Right: Actions - Hidden on desktop, shown on mobile */}
-        <div className="flex md:hidden items-center gap-2 sm:gap-3 flex-shrink-0">
-          {/* Wallet Icon */}
+        {/* Right: Actions (Wallet & Cart) */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-auto">
           <Link to="/user/wallet">
             <Button
               variant="ghost"
@@ -987,13 +983,12 @@ export default function PageNavbar({
               className="h-8 w-8 sm:h-9 sm:w-9 rounded-full p-0 hover:opacity-80 transition-opacity"
               title="Wallet"
             >
-              <div className={`h-full w-full rounded-full bg-white/20 flex items-center justify-center ring-2 ${ringColor}`}>
-                <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-gray-800" strokeWidth={2} />
+              <div className={`h-full w-full rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center`}>
+                <Wallet className={`h-4 w-4 sm:h-5 sm:w-5 ${textColor === "white" ? "text-black" : "text-gray-900"}`} strokeWidth={2} />
               </div>
             </Button>
           </Link>
 
-          {/* Cart Icon */}
           <Link to="/user/cart">
             <Button
               variant="ghost"
@@ -1001,11 +996,11 @@ export default function PageNavbar({
               className="relative h-8 w-8 sm:h-9 sm:w-9 rounded-full p-0 hover:opacity-80 transition-opacity"
               title="Cart"
             >
-              <div className={`h-full w-full rounded-full bg-white/20 flex items-center justify-center ring-2 ${ringColor}`}>
-                <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-gray-800" strokeWidth={2} />
+              <div className={`h-full w-full rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center`}>
+                <ShoppingCart className={`h-4 w-4 sm:h-5 sm:w-5 ${textColor === "white" ? "text-black" : "text-gray-900"}`} strokeWidth={2} />
               </div>
               {cartCount > 0 && (
-                <span className={`absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center ring-2 ${textColor === "white" ? "ring-white/50" : "ring-gray-800/30"}`}>
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center ring-2 ring-white">
                   <span className="text-[9px] font-bold text-white">{cartCount > 99 ? "99+" : cartCount}</span>
                 </span>
               )}
@@ -1021,8 +1016,8 @@ export default function PageNavbar({
                 className="h-8 w-8 sm:h-9 sm:w-9 rounded-full p-0 hover:opacity-80 transition-opacity"
                 title="Profile"
               >
-                <div className={`h-full w-full rounded-full bg-white flex items-center justify-center shadow-lg ring-2 ${ringColor}`}>
-                  <span className="text-black text-xs sm:text-sm font-extrabold">
+                <div className={`h-full w-full rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shadow-sm`}>
+                  <span className={`text-xs sm:text-sm font-extrabold ${textColor === "white" ? "text-black" : "text-gray-900"}`}>
                     A
                   </span>
                 </div>

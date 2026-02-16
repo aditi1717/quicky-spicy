@@ -205,6 +205,29 @@ export default function Home() {
   const [showAllCategoriesModal, setShowAllCategoriesModal] = useState(false)
   const isHandlingSwitchOff = useRef(false)
 
+  // Merge API explore items with fallback to ensure all 4 cards are shown
+  const finalExploreItems = useMemo(() => {
+    const fallback = [
+      { id: 'offers', label: 'Offers', image: exploreOffers, href: '/user/offers' },
+      { id: 'gourmet', label: 'Gourmet', image: exploreGourmet, href: '/user/gourmet' },
+      { id: 'top10', label: 'Top 10', image: exploreTop10, href: '/user/top-10' },
+      { id: 'collection', label: 'Collections', image: exploreCollection, href: '/user/profile/favorites' },
+    ];
+
+    if (!landingExploreMore || landingExploreMore.length === 0) return fallback;
+
+    return fallback.map(item => {
+      const apiItem = landingExploreMore.find(ai =>
+        ai.label?.toLowerCase() === item.label?.toLowerCase()
+      );
+      if (apiItem) {
+        // API uses imageUrl, fallback uses image. Prefer API.
+        return { ...item, image: apiItem.imageUrl || item.image };
+      }
+      return item;
+    });
+  }, [landingExploreMore]);
+
   // Swipe functionality for hero banner carousel
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
@@ -1156,19 +1179,120 @@ export default function Home() {
         `}</style>
       </div>
 
-      {/* Unified Navbar & Hero Section */}
-      <div className="relative w-full overflow-hidden min-h-[39vh] lg:min-h-[50vh] md:pt-16">
-        {/* Hero Banner Carousel Background */}
+      {/* Unified Navbar & Header Section */}
+      <div className="relative w-full bg-white dark:bg-[#0a0a0a] z-40">
+
+        {/* Navbar */}
+        <motion.div
+          className="relative z-50 pt-2 sm:pt-3 lg:pt-4"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+          <PageNavbar textColor="black" zIndex={50} />
+        </motion.div>
+
+        {/* Search Bar and VEG MODE Container - Sticky */}
+        <motion.div
+          className="sticky top-0 z-40 w-full bg-white dark:bg-[#0a0a0a] py-3 sm:py-4 shadow-sm"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+        >
+          <div className="max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center gap-3 sm:gap-4 lg:gap-6">
+            {/* Enhanced Search Bar */}
+            <motion.div
+              className="flex-1 relative"
+              whileHover={{ scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+              <div className="relative bg-gray-50 dark:bg-[#1a1a1a] rounded-xl lg:rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-1 sm:p-1.5 lg:p-2 transition-all duration-300 hover:shadow-lg">
+                <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
+                  <Search className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-green-600 flex-shrink-0 ml-2 sm:ml-3 lg:ml-4" strokeWidth={2.5} />
+                  <div className="flex-1 relative">
+                    <div className="relative w-full">
+                      <Input
+                        value={heroSearch}
+                        onChange={(e) => setHeroSearch(e.target.value)}
+                        onFocus={handleSearchFocus}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && heroSearch.trim()) {
+                            navigate(`/user/search?q=${encodeURIComponent(heroSearch.trim())}`)
+                            closeSearch()
+                            setHeroSearch("")
+                          }
+                        }}
+                        aria-label="Search restaurants and food"
+                        className="pl-0 pr-2 h-8 sm:h-9 lg:h-11 w-full bg-transparent border-0 text-sm sm:text-base lg:text-lg font-semibold text-gray-700 dark:text-white focus-visible:ring-0 focus-visible:ring-offset-0 rounded-full placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                      />
+                      {/* Animated placeholder */}
+                      {!heroSearch && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none h-5 lg:h-6 overflow-hidden">
+                          <AnimatePresence mode="wait">
+                            <motion.span
+                              key={placeholderIndex}
+                              initial={{ y: 16, opacity: 0 }}
+                              animate={{ y: 0, opacity: 1 }}
+                              exit={{ y: -16, opacity: 0 }}
+                              transition={{ duration: 0.3 }}
+                              className="text-sm sm:text-base lg:text-lg font-semibold text-gray-500 dark:text-gray-400 inline-block"
+                            >
+                              {placeholders[placeholderIndex]}
+                            </motion.span>
+                          </AnimatePresence>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Voice Search"
+                    onClick={handleSearchFocus}
+                    className="flex-shrink-0 mr-2 sm:mr-3 lg:mr-4 p-1 lg:p-1.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors"
+                  >
+                    <Mic className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-gray-500 dark:text-gray-400" strokeWidth={2.5} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* VEG MODE Toggle */}
+            <motion.div
+              ref={vegModeToggleRef}
+              className="flex flex-col items-center gap-0.5 sm:gap-1 lg:gap-1.5 flex-shrink-0 relative"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <div className="flex flex-col items-center">
+                <span className="text-green-700 dark:text-green-500 text-[10px] sm:text-[11px] lg:text-sm font-black leading-none">VEG</span>
+                <span className="text-green-700 dark:text-green-500 text-[8px] sm:text-[10px] lg:text-xs font-black leading-none">MODE</span>
+              </div>
+              <Switch
+                checked={vegMode}
+                onCheckedChange={handleVegModeChange}
+                aria-label="Toggle Veg Mode"
+                className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300 w-9 h-4 sm:w-10 sm:h-5 lg:w-12 lg:h-6 shadow-md [&_[data-slot=switch-thumb]]:bg-white [&_[data-slot=switch-thumb]]:h-3 [&_[data-slot=switch-thumb]]:w-3 sm:[&_[data-slot=switch-thumb]]:h-4 sm:[&_[data-slot=switch-thumb]]:w-4 lg:[&_[data-slot=switch-thumb]]:h-5 lg:[&_[data-slot=switch-thumb]]:w-5 [&_[data-slot=switch-thumb]]:data-[state=checked]:translate-x-5 sm:[&_[data-slot=switch-thumb]]:data-[state=checked]:translate-x-5 lg:[&_[data-slot=switch-thumb]]:data-[state=checked]:translate-x-6 [&_[data-slot=switch-thumb]]:data-[state=unchecked]:translate-x-0"
+              />
+            </motion.div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Hero Banner Section - Moved Below Search */}
+      <div className="relative w-full overflow-hidden min-h-[200px] h-[30vh] sm:h-[40vh] md:h-[50vh] lg:h-[60vh] mt-2 md:mt-4 mb-6">
         {loadingBanners ? (
-          <div className="absolute top-0 left-0 right-0 bottom-0 z-0 bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
-            <div className="text-white text-center">
+          <div className="absolute top-0 left-0 right-0 bottom-0 z-0 bg-gray-100 dark:bg-gray-900 flex items-center justify-center mx-3 sm:mx-4 lg:mx-8 rounded-xl sm:rounded-2xl">
+            <div className="text-gray-500 text-center">
               <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
               <p className="text-sm">Loading banners...</p>
             </div>
           </div>
         ) : heroBannerImages.length > 0 ? (
           <div
-            className="absolute top-0 left-0 right-0 bottom-0 z-0 cursor-grab active:cursor-grabbing overflow-hidden"
+            className="absolute top-0 left-0 right-0 bottom-0 z-0 cursor-grab active:cursor-grabbing overflow-hidden rounded-xl sm:rounded-2xl mx-3 sm:mx-4 lg:mx-8"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -1180,14 +1304,14 @@ export default function Home() {
             <motion.div
               className="flex h-full"
               animate={{
-                x: `-${currentBannerIndex * 100}vw`
+                x: `-${currentBannerIndex * 100}%`
               }}
               transition={{
                 duration: 0.6,
                 ease: "easeInOut"
               }}
               style={{
-                width: `${heroBannerImages.length * 100}vw`
+                width: `${heroBannerImages.length * 100}%`
               }}
             >
               {heroBannerImages.map((image, index) => {
@@ -1198,11 +1322,10 @@ export default function Home() {
                 return (
                   <div
                     key={index}
-                    className="h-full flex-shrink-0"
-                    style={{ width: '100vw', cursor: hasLinkedRestaurants ? 'pointer' : 'default' }}
+                    className="h-full flex-shrink-0 relative"
+                    style={{ width: `${100 / heroBannerImages.length}%`, cursor: hasLinkedRestaurants ? 'pointer' : 'default' }}
                     onClick={() => {
                       if (hasLinkedRestaurants) {
-                        // Redirect to first linked restaurant
                         const firstRestaurant = linkedRestaurants[0]
                         const restaurantSlug = firstRestaurant.slug || firstRestaurant.restaurantId || firstRestaurant._id
                         navigate(`/restaurants/${restaurantSlug}`)
@@ -1212,122 +1335,40 @@ export default function Home() {
                     <OptimizedImage
                       src={image}
                       alt={`Hero Banner ${index + 1}`}
-                      className="w-full h-full"
+                      className="w-full h-full object-cover"
                       priority={index === 0}
                       sizes="100vw"
                       objectFit="cover"
                       placeholder="blur"
                     />
+                    {/* Gradient overlay for text readability if needed */}
+                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
                   </div>
                 )
               })}
             </motion.div>
+
+            {/* Banner Dots Indicators */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+              {heroBannerImages.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentBannerIndex(index);
+                  }}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${currentBannerIndex === index
+                    ? 'bg-white w-6'
+                    : 'bg-white/50 hover:bg-white/80'
+                    }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
           </div>
         ) : (
-          <div className="absolute top-0 left-0 right-0 bottom-0 z-0 bg-gradient-to-br from-green-400 to-green-600" />
+          <div className="absolute top-0 left-0 right-0 bottom-0 z-0 bg-gray-100 mx-3 sm:mx-4 lg:mx-8 rounded-xl sm:rounded-2xl" />
         )}
-
-        {/* Navbar */}
-        <motion.div
-          className="relative z-20 pt-2 sm:pt-3 lg:pt-4"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        >
-          <PageNavbar textColor="white" zIndex={20} />
-        </motion.div>
-
-        {/* Hero Section */}
-        <section className="relative z-20 w-full py-4 sm:py-6 md:py-12 lg:py-12">
-          {/* Content */}
-          <div className="relative z-20 max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-3 sm:px-6 lg:px-8">
-            {/* Search Bar and VEG MODE Container - Sticky */}
-            <motion.div
-              className="sticky top-4 z-30 flex items-center gap-3 sm:gap-4 lg:gap-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-            >
-              {/* Enhanced Search Bar */}
-              <motion.div
-                className="flex-1 relative"
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              >
-                <div className="relative bg-white dark:bg-[#1a1a1a] rounded-xl lg:rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 p-1 sm:p-1.5 lg:p-2 transition-all duration-300 hover:shadow-xl">
-                  <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
-                    <Search className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-green-600 flex-shrink-0 ml-2 sm:ml-3 lg:ml-4" strokeWidth={2.5} />
-                    <div className="flex-1 relative">
-                      <div className="relative w-full">
-                        <Input
-                          value={heroSearch}
-                          onChange={(e) => setHeroSearch(e.target.value)}
-                          onFocus={handleSearchFocus}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && heroSearch.trim()) {
-                              navigate(`/user/search?q=${encodeURIComponent(heroSearch.trim())}`)
-                              closeSearch()
-                              setHeroSearch("")
-                            }
-                          }}
-                          aria-label="Search restaurants and food"
-                          className="pl-0 pr-2 h-8 sm:h-9 lg:h-11 w-full bg-white dark:bg-[#1a1a1a] border-0 text-sm sm:text-base lg:text-lg font-semibold text-gray-700 dark:text-white focus-visible:ring-0 focus-visible:ring-offset-0 rounded-full placeholder:text-gray-500 dark:placeholder:text-gray-400"
-                        />
-                        {/* Animated placeholder - same animation as RestaurantDetails highlight offer */}
-                        {!heroSearch && (
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none h-5 lg:h-6 overflow-hidden">
-                            <AnimatePresence mode="wait">
-                              <motion.span
-                                key={placeholderIndex}
-                                initial={{ y: 16, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                exit={{ y: -16, opacity: 0 }}
-                                transition={{ duration: 0.3 }}
-                                className="text-sm sm:text-base lg:text-lg font-semibold text-gray-500 dark:text-gray-400 inline-block"
-                              >
-                                {placeholders[placeholderIndex]}
-                              </motion.span>
-                            </AnimatePresence>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      aria-label="Voice Search"
-                      onClick={handleSearchFocus}
-                      className="flex-shrink-0 mr-2 sm:mr-3 lg:mr-4 p-1 lg:p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                    >
-                      <Mic className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-gray-500 dark:text-gray-400" strokeWidth={2.5} />
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* VEG MODE Toggle */}
-              <motion.div
-                ref={vegModeToggleRef}
-                className="flex flex-col items-center gap-0.5 sm:gap-1 lg:gap-1.5 flex-shrink-0 relative"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <div className="flex flex-col items-center">
-                  <span className="text-white text-[13px] sm:text-[11px] lg:text-sm font-black leading-none">VEG</span>
-                  <span className="text-white text-[9.5px] sm:text-[10px] lg:text-xs font-black leading-none">MODE</span>
-                </div>
-                <Switch
-                  checked={vegMode}
-                  onCheckedChange={handleVegModeChange}
-                  aria-label="Toggle Veg Mode"
-                  className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300 w-9 h-4 sm:w-10 sm:h-5 lg:w-12 lg:h-6 shadow-lg [&_[data-slot=switch-thumb]]:bg-white [&_[data-slot=switch-thumb]]:h-3 [&_[data-slot=switch-thumb]]:w-3 sm:[&_[data-slot=switch-thumb]]:h-4 sm:[&_[data-slot=switch-thumb]]:w-4 lg:[&_[data-slot=switch-thumb]]:h-5 lg:[&_[data-slot=switch-thumb]]:w-5 [&_[data-slot=switch-thumb]]:data-[state=checked]:translate-x-5 sm:[&_[data-slot=switch-thumb]]:data-[state=checked]:translate-x-5 lg:[&_[data-slot=switch-thumb]]:data-[state=checked]:translate-x-6 [&_[data-slot=switch-thumb]]:data-[state=unchecked]:translate-x-0"
-                />
-              </motion.div>
-            </motion.div>
-          </div>
-        </section>
       </div>
 
       {/* Rest of Content - Container Width with Unified Background */}
@@ -1609,34 +1650,8 @@ export default function Home() {
               <div className="flex items-center justify-center py-4">
                 <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
               </div>
-            ) : landingExploreMore.length === 0 ? (
-              // Fallback to hardcoded explore more if API returns empty
-              [
-                {
-                  id: 'offers',
-                  label: 'Offers',
-                  image: exploreOffers,
-                  href: '/user/offers'
-                },
-                {
-                  id: 'gourmet',
-                  label: 'Gourmet',
-                  image: exploreGourmet,
-                  href: '/user/gourmet'
-                },
-                {
-                  id: 'top10',
-                  label: 'Top 10',
-                  image: exploreTop10,
-                  href: '/user/top-10'
-                },
-                {
-                  id: 'collection',
-                  label: 'Collections',
-                  image: exploreCollection,
-                  href: '/user/profile/favorites'
-                },
-              ].map((item, index) => (
+            ) : (
+              finalExploreItems.map((item, index) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, y: 20, scale: 0.9 }}
@@ -1672,46 +1687,6 @@ export default function Home() {
                   </Link>
                 </motion.div>
               ))
-            ) : (
-              landingExploreMore
-                .filter(item => item.id !== 'giftcard' && item.label?.toLowerCase() !== 'gift card')
-                .map((item, index) => (
-                  <motion.div
-                    key={item._id}
-                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{
-                      duration: 0.4,
-                      delay: index * 0.1,
-                      type: "spring",
-                      stiffness: 100
-                    }}
-                    whileHover={{ scale: 1.1, y: -5 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Link to={item.link} className="flex-shrink-0 bg-white dark:bg-[#1a1a1a]/80 dark:text-white">
-                      <div className="flex flex-col items-center gap-2.5 w-24 sm:w-28 md:w-32 group">
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl bg-white dark:bg-[#1a1a1a]/80 dark:text-white  flex items-center justify-center shadow-sm group-hover:shadow-lg transition-all duration-300 overflow-hidden p-2.5">
-                          <OptimizedImage
-                            src={item.imageUrl}
-                            alt={item.label}
-                            className="w-full h-full"
-                            width={112}
-                            height={112}
-                            sizes="(max-width: 640px) 80px, (max-width: 768px) 96px, 112px"
-                            objectFit="contain"
-                            placeholder="blur"
-                            onError={() => { }}
-                          />
-                        </div>
-                        <span className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300 text-center leading-tight">
-                          {item.label}
-                        </span>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))
             )}
           </div>
         </motion.section>

@@ -588,6 +588,55 @@ export const createLandingExploreMore = async (req, res) => {
 };
 
 /**
+ * Update explore more item (mainly for icon)
+ */
+export const updateLandingExploreMore = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { label, link } = req.body; // Optional updates if needed in future
+
+    const item = await LandingPageExploreMore.findById(id);
+    if (!item) {
+      return errorResponse(res, 404, 'Explore more item not found');
+    }
+
+    if (req.file) {
+      // Upload new image
+      const folder = 'appzeto/landing/explore-more';
+      const result = await uploadToCloudinary(req.file.buffer, {
+        folder,
+        resource_type: 'image'
+      });
+
+      // Delete old image from Cloudinary
+      if (item.cloudinaryPublicId) {
+        try {
+          await cloudinary.uploader.destroy(item.cloudinaryPublicId);
+        } catch (error) {
+          console.error('Error deleting old image:', error);
+        }
+      }
+
+      item.imageUrl = result.secure_url;
+      item.cloudinaryPublicId = result.public_id;
+    }
+
+    if (label) item.label = label;
+    if (link) item.link = link;
+
+    item.updatedAt = new Date();
+    await item.save();
+
+    return successResponse(res, 200, 'Explore more item updated successfully', {
+      item
+    });
+  } catch (error) {
+    console.error('Error updating explore more item:', error);
+    return errorResponse(res, 500, 'Failed to update explore more item');
+  }
+};
+
+/**
  * Delete an explore more item
  */
 export const deleteLandingExploreMore = async (req, res) => {

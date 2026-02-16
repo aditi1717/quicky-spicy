@@ -49,7 +49,9 @@ import {
   createGourmetRestaurant,
   deleteGourmetRestaurant,
   updateGourmetRestaurantOrder,
-  toggleGourmetRestaurantStatus
+
+  toggleGourmetRestaurantStatus,
+  updateLandingExploreMore
 } from '../controllers/heroBannerController.js';
 
 const router = express.Router();
@@ -101,6 +103,12 @@ router.post(
   authenticateAdmin,
   uploadMiddleware.single('image'),
   createLandingExploreMore
+);
+router.patch(
+  '/landing/explore-more/:id',
+  authenticateAdmin,
+  uploadMiddleware.single('image'),
+  updateLandingExploreMore
 );
 router.delete('/landing/explore-more/:id', authenticateAdmin, deleteLandingExploreMore);
 router.patch('/landing/explore-more/:id/order', authenticateAdmin, updateLandingExploreMoreOrder);
