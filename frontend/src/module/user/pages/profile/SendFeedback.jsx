@@ -25,7 +25,7 @@ export default function SendFeedback() {
       const response = await api.post(API_ENDPOINTS.ADMIN.FEEDBACK_CREATE, {
         message: feedback.trim()
       })
-      
+
       if (response.data.success) {
         setIsSubmitted(true)
         setFeedback("")
@@ -106,7 +106,7 @@ export default function SendFeedback() {
             <Button
               onClick={handleSubmit}
               disabled={!feedback.trim() || isSubmitting}
-              className="w-full bg-green-600 hover:bg-green-700 text-white text-sm md:text-base h-10 md:h-12 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#EB590E] hover:bg-[#D94F0C] text-white text-sm md:text-base h-10 md:h-12 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>
@@ -122,8 +122,8 @@ export default function SendFeedback() {
           /* Success State */
           <Card className="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-md border-0 dark:border-gray-800 overflow-hidden">
             <CardContent className="p-6 md:p-8 lg:p-10 text-center">
-              <div className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-5 lg:mb-6">
-                <Check className="h-8 w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 text-green-600 dark:text-green-400" />
+              <div className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-5 lg:mb-6">
+                <Check className="h-8 w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 text-[#EB590E] dark:text-[#F97316]" />
               </div>
               <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-2 md:mb-3">Thank You!</h2>
               <p className="text-sm md:text-base lg:text-lg text-gray-600 dark:text-gray-400 mb-4 md:mb-6">

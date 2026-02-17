@@ -22,7 +22,7 @@ export default function SubmitComplaint() {
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  
+
   const [formData, setFormData] = useState({
     complaintType: '',
     subject: '',
@@ -44,7 +44,7 @@ export default function SubmitComplaint() {
         setLoading(true)
         console.log("Fetching order details for orderId:", orderId)
         const response = await orderAPI.getOrderDetails(orderId)
-        
+
         let orderData = null
         if (response?.data?.success && response.data.data?.order) {
           orderData = response.data.data.order
@@ -59,10 +59,10 @@ export default function SubmitComplaint() {
           return
         }
 
-        console.log("Order fetched successfully:", { 
-          _id: orderData._id, 
+        console.log("Order fetched successfully:", {
+          _id: orderData._id,
           orderId: orderData.orderId,
-          restaurantName: orderData.restaurantName 
+          restaurantName: orderData.restaurantName
         })
         setOrder(orderData)
       } catch (error) {
@@ -104,11 +104,11 @@ export default function SubmitComplaint() {
         setSubmitting(false)
         return
       }
-      
-      const orderIdString = typeof orderMongoId === 'object' && orderMongoId.toString 
-        ? orderMongoId.toString() 
+
+      const orderIdString = typeof orderMongoId === 'object' && orderMongoId.toString
+        ? orderMongoId.toString()
         : String(orderMongoId)
-      
+
       console.log("Submitting complaint for orderId:", orderIdString)
       const response = await orderAPI.submitComplaint({
         orderId: orderIdString,
@@ -195,7 +195,7 @@ export default function SubmitComplaint() {
           <select
             value={formData.complaintType}
             onChange={(e) => setFormData({ ...formData, complaintType: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E23744] focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#EB590E] focus:border-transparent"
             required
           >
             <option value="">Select complaint type</option>
@@ -217,7 +217,7 @@ export default function SubmitComplaint() {
             value={formData.subject}
             onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
             placeholder="Brief description of your complaint"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E23744] focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#EB590E] focus:border-transparent"
             required
             maxLength={200}
           />
@@ -233,7 +233,7 @@ export default function SubmitComplaint() {
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder="Please provide detailed information about your complaint..."
             rows={6}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E23744] focus:border-transparent resize-none"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#EB590E] focus:border-transparent resize-none"
             required
             maxLength={1000}
           />
@@ -258,7 +258,7 @@ export default function SubmitComplaint() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-[#E23744] text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-[#EB590E] text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-[#D94F0C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <>

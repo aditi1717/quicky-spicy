@@ -55,7 +55,7 @@ export default function OTP() {
       } else {
         setContactInfo(data.phone || "")
       }
-      
+
       // OTP auto-fill removed - user must manually enter OTP
     }
 
@@ -165,7 +165,7 @@ export default function OTP() {
     }
 
     const code = otpValue || otp.join("")
-    
+
     if (code.length !== 6) {
       return
     }
@@ -351,7 +351,7 @@ export default function OTP() {
           <ArrowLeft className="h-5 w-5 md:h-6 md:w-6 text-black dark:text-white" />
         </button>
         <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-black dark:text-white">OTP Verification</h1>
-      </div> 
+      </div>
 
       {/* Main Content */}
       <div className="flex flex-col justify-center px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20 pt-8 sm:pt-12 md:pt-16 lg:pt-20 pb-12 sm:pb-16 md:pb-20">
@@ -362,8 +362,8 @@ export default function OTP() {
               {showNameInput
                 ? "You're almost done! Please tell us your name to complete registration."
                 : contactType === "email"
-                ? "We have sent a verification code to"
-                : "We have sent a verification code to"}
+                  ? "We have sent a verification code to"
+                  : "We have sent a verification code to"}
             </p>
             {!showNameInput && (
               <p className="text-base md:text-lg lg:text-xl text-black dark:text-white font-medium">
@@ -395,7 +395,7 @@ export default function OTP() {
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onPaste={index === 0 ? handlePaste : undefined}
                     disabled={isLoading}
-                    className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-18 lg:h-18 text-center text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold p-0 border-2 border-black dark:border-gray-600 rounded-lg focus-visible:ring-2 focus-visible:ring-[#E23744] focus-visible:border-[#E23744] dark:focus-visible:border-[#E23744] bg-white dark:bg-[#1a1a1a] text-black dark:text-white transition-all"
+                    className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-18 lg:h-18 text-center text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold p-0 border-2 border-black dark:border-gray-600 rounded-lg focus-visible:ring-2 focus-visible:ring-[#EB590E] focus-visible:border-[#EB590E] dark:focus-visible:border-[#EB590E] bg-white dark:bg-[#1a1a1a] text-black dark:text-white transition-all"
                   />
                 ))}
               </div>
@@ -414,7 +414,7 @@ export default function OTP() {
                     type="button"
                     onClick={handleResend}
                     disabled={isLoading}
-                    className="text-sm md:text-base text-[#E23744] hover:text-[#d32f3d] dark:text-[#E23744] dark:hover:text-[#d32f3d] disabled:opacity-50 transition-colors font-medium"
+                    className="text-sm md:text-base text-[#EB590E] hover:text-[#D94F0C] dark:text-[#EB590E] dark:hover:text-[#D94F0C] disabled:opacity-50 transition-colors font-medium"
                   >
                     Resend {contactType === "email" ? "email" : "SMS"}
                   </button>
@@ -439,9 +439,8 @@ export default function OTP() {
                   }}
                   disabled={isLoading}
                   placeholder="Enter your name"
-                  className={`h-11 md:h-14 text-base md:text-lg border-2 ${
-                    nameError ? "border-red-500" : "border-gray-300 dark:border-gray-700"
-                  } bg-white dark:bg-[#1a1a1a] text-black dark:text-white rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-[#E23744]`}
+                  className={`h-11 md:h-14 text-base md:text-lg border-2 ${nameError ? "border-red-500" : "border-gray-300 dark:border-gray-700"
+                    } bg-white dark:bg-[#1a1a1a] text-black dark:text-white rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-[#EB590E]`}
                 />
                 {nameError && (
                   <p className="text-xs md:text-sm text-red-500 text-left">
@@ -453,7 +452,7 @@ export default function OTP() {
               <Button
                 onClick={handleSubmitName}
                 disabled={isLoading}
-                className="w-full h-11 md:h-14 bg-[#E23744] hover:bg-[#d32f3d] text-white font-semibold text-base md:text-lg rounded-lg transition-all hover:shadow-lg active:scale-[0.98]"
+                className="w-full h-11 md:h-14 bg-[#EB590E] hover:bg-[#D94F0C] text-white font-semibold text-base md:text-lg rounded-lg transition-all hover:shadow-lg active:scale-[0.98]"
               >
                 {isLoading ? "Continuing..." : "Continue"}
               </Button>
@@ -463,7 +462,7 @@ export default function OTP() {
           {/* Loading Spinner */}
           {isLoading && !showNameInput && (
             <div className="flex justify-center pt-4">
-              <Loader2 className="h-6 w-6 text-[#E23744] animate-spin" />
+              <Loader2 className="h-6 w-6 text-[#EB590E] animate-spin" />
             </div>
           )}
         </div>
@@ -474,7 +473,7 @@ export default function OTP() {
         <button
           type="button"
           onClick={() => navigate("/user/auth/sign-in")}
-          className="text-sm md:text-base text-[#E23744] hover:text-[#d32f3d] hover:underline transition-colors font-medium"
+          className="text-sm md:text-base text-[#EB590E] hover:text-[#D94F0C] hover:underline transition-colors font-medium"
         >
           Go back to login methods
         </button>

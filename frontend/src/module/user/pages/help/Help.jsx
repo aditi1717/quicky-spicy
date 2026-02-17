@@ -1,14 +1,14 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { 
-  Search, 
-  HelpCircle, 
-  Package, 
-  CreditCard, 
-  User, 
-  Truck, 
-  MessageCircle, 
-  Phone, 
+import {
+  Search,
+  HelpCircle,
+  Package,
+  CreditCard,
+  User,
+  Truck,
+  MessageCircle,
+  Phone,
   Mail,
   ChevronDown,
   ChevronRight,
@@ -30,8 +30,8 @@ const helpCategories = [
     id: "ordering",
     title: "Ordering",
     icon: Package,
-    color: "text-blue-600",
-    bgColor: "bg-blue-50",
+    color: "text-[#EB590E]",
+    bgColor: "bg-orange-50",
     description: "Learn how to place and manage orders",
     topics: [
       {
@@ -56,8 +56,8 @@ const helpCategories = [
     id: "payments",
     title: "Payments",
     icon: CreditCard,
-    color: "text-green-600",
-    bgColor: "bg-green-50",
+    color: "text-[#EB590E]",
+    bgColor: "bg-orange-50",
     description: "Payment methods and billing questions",
     topics: [
       {
@@ -108,8 +108,8 @@ const helpCategories = [
     id: "account",
     title: "Account & Profile",
     icon: User,
-    color: "text-purple-600",
-    bgColor: "bg-purple-50",
+    color: "text-[#EB590E]",
+    bgColor: "bg-orange-50",
     description: "Manage your account and preferences",
     topics: [
       {
@@ -134,8 +134,8 @@ const helpCategories = [
     id: "refunds",
     title: "Refunds & Returns",
     icon: Shield,
-    color: "text-red-600",
-    bgColor: "bg-red-50",
+    color: "text-[#EB590E]",
+    bgColor: "bg-orange-50",
     description: "Refund policy and return process",
     topics: [
       {
@@ -240,42 +240,42 @@ export default function Help() {
         <ScrollReveal delay={0.2}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
             <Link to="/user/orders">
-                <CardContent className="p-4 md:p-5 lg:p-6">
-                  <div className="flex items-center gap-3 md:gap-4">
-                    <div className="p-2 md:p-3 bg-yellow-100 rounded-lg">
-                      <Package className="h-5 w-5 md:h-6 md:w-6 text-primary-orange" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm md:text-base font-semibold">Track Your Order</h3>
-                      <p className="text-xs md:text-sm text-muted-foreground">View order status</p>
-                    </div>
-                  </div>
-                </CardContent>
-            </Link>
-            <Link to="/user/profile">
-                <CardContent className="p-4 md:p-5 lg:p-6">
-                  <div className="flex items-center gap-3 md:gap-4">
-                    <div className="p-2 md:p-3 bg-blue-100 rounded-lg">
-                      <User className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm md:text-base font-semibold">Manage Account</h3>
-                      <p className="text-xs md:text-sm text-muted-foreground">Update profile & settings</p>
-                    </div>
-                  </div>
-                </CardContent>
-            </Link>
               <CardContent className="p-4 md:p-5 lg:p-6">
                 <div className="flex items-center gap-3 md:gap-4">
-                  <div className="p-2 md:p-3 bg-green-100 rounded-lg">
-                    <MessageCircle className="h-5 w-5 md:h-6 md:w-6 text-green-600" />
+                  <div className="p-2 md:p-3 bg-yellow-100 rounded-lg">
+                    <Package className="h-5 w-5 md:h-6 md:w-6 text-primary-orange" />
                   </div>
                   <div>
-                    <h3 className="text-sm md:text-base font-semibold">Contact Support</h3>
-                    <p className="text-xs md:text-sm text-muted-foreground">Get help from our team</p>
+                    <h3 className="text-sm md:text-base font-semibold">Track Your Order</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground">View order status</p>
                   </div>
                 </div>
               </CardContent>
+            </Link>
+            <Link to="/user/profile">
+              <CardContent className="p-4 md:p-5 lg:p-6">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="p-2 md:p-3 bg-orange-100 rounded-lg">
+                    <User className="h-5 w-5 md:h-6 md:w-6 text-[#EB590E]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm md:text-base font-semibold">Manage Account</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground">Update profile & settings</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Link>
+            <CardContent className="p-4 md:p-5 lg:p-6">
+              <div className="flex items-center gap-3 md:gap-4">
+                <div className="p-2 md:p-3 bg-orange-100 rounded-lg">
+                  <MessageCircle className="h-5 w-5 md:h-6 md:w-6 text-[#EB590E]" />
+                </div>
+                <div>
+                  <h3 className="text-sm md:text-base font-semibold">Contact Support</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground">Get help from our team</p>
+                </div>
+              </div>
+            </CardContent>
           </div>
         </ScrollReveal>
 
@@ -380,8 +380,8 @@ export default function Help() {
             <CardContent className="space-y-4 md:space-y-5 lg:space-y-6 p-4 md:p-5 lg:p-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
                 <div className="flex items-start gap-3 p-4 bg-white rounded-lg">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Phone className="h-5 w-5 text-blue-600" />
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <Phone className="h-5 w-5 text-[#EB590E]" />
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1">Phone Support</h3>
@@ -397,8 +397,8 @@ export default function Help() {
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-4 bg-white rounded-lg">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <Mail className="h-5 w-5 text-green-600" />
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <Mail className="h-5 w-5 text-[#EB590E]" />
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1">Email Support</h3>
@@ -414,8 +414,8 @@ export default function Help() {
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-4 bg-white rounded-lg">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <MessageCircle className="h-5 w-5 text-purple-600" />
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <MessageCircle className="h-5 w-5 text-[#EB590E]" />
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1">Live Chat</h3>
@@ -438,7 +438,7 @@ export default function Help() {
                   <Clock className="h-4 w-4 inline mr-1" />
                   Average response time: Less than 5 minutes
                 </p>
-        </div>
+              </div>
             </CardContent>
           </Card>
         </ScrollReveal>

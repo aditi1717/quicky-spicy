@@ -100,7 +100,7 @@ export default function UserOrderDetails() {
           <p className="text-gray-700 text-sm font-medium">Order not found</p>
           <button
             onClick={() => navigate("/user/orders")}
-            className="px-4 py-2 rounded-lg bg-[#E23744] text-white text-sm font-semibold"
+            className="px-4 py-2 rounded-lg bg-[#EB590E] text-white text-sm font-semibold"
           >
             Back to Orders
           </button>
@@ -165,12 +165,12 @@ export default function UserOrderDetails() {
   const paymentMethod = order.payment?.method || "Online"
   const paymentDate = order.createdAt
     ? new Date(order.createdAt).toLocaleString("en-IN", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      })
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    })
     : ""
 
   const addressText =
@@ -205,24 +205,24 @@ export default function UserOrderDetails() {
       const companyName = await getCompanyNameAsync()
       // Create new PDF document
       const doc = new jsPDF()
-      
+
       // Title
       doc.setFontSize(16)
       doc.setFont('helvetica', 'bold')
       doc.text(`${companyName} Order: Summary and Receipt`, 105, 20, { align: 'center' })
-      
+
       // Order details section
       let yPos = 35
       doc.setFontSize(10)
       doc.setFont('helvetica', 'normal')
-      
+
       // Order ID
       doc.setFont('helvetica', 'bold')
       doc.text('Order ID:', 20, yPos)
       doc.setFont('helvetica', 'normal')
       doc.text(orderIdDisplay, 60, yPos)
       yPos += 7
-      
+
       // Order Time
       doc.setFont('helvetica', 'bold')
       doc.text('Order Time:', 20, yPos)
@@ -230,14 +230,14 @@ export default function UserOrderDetails() {
       const orderTimeLines = doc.splitTextToSize(paymentDate || 'N/A', 130)
       doc.text(orderTimeLines, 60, yPos)
       yPos += orderTimeLines.length * 7
-      
+
       // Customer Name
       doc.setFont('helvetica', 'bold')
       doc.text('Customer Name:', 20, yPos)
       doc.setFont('helvetica', 'normal')
       doc.text(userName || 'Customer', 60, yPos)
       yPos += 7
-      
+
       // Delivery Address
       doc.setFont('helvetica', 'bold')
       doc.text('Delivery Address:', 20, yPos)
@@ -245,14 +245,14 @@ export default function UserOrderDetails() {
       const addressLines = doc.splitTextToSize(addressText || 'N/A', 130)
       doc.text(addressLines, 60, yPos)
       yPos += addressLines.length * 7
-      
+
       // Restaurant Name
       doc.setFont('helvetica', 'bold')
       doc.text('Restaurant Name:', 20, yPos)
       doc.setFont('helvetica', 'normal')
       doc.text(restaurantName, 60, yPos)
       yPos += 7
-      
+
       // Restaurant Address
       doc.setFont('helvetica', 'bold')
       doc.text('Restaurant Address:', 20, yPos)
@@ -260,7 +260,7 @@ export default function UserOrderDetails() {
       const restaurantAddressLines = doc.splitTextToSize(restaurantLocation || 'N/A', 130)
       doc.text(restaurantAddressLines, 60, yPos)
       yPos += restaurantAddressLines.length * 7 + 5
-      
+
       // Items table
       const tableData = items.map(item => [
         item.name || 'Item',
@@ -268,7 +268,7 @@ export default function UserOrderDetails() {
         `₹${Number(item.price || 0).toFixed(2)}`,
         `₹${Number((item.price || 0) * (item.quantity || item.qty || 1)).toFixed(2)}`
       ])
-      
+
       autoTable(doc, {
         startY: yPos,
         head: [['Item', 'Quantity', 'Unit Price', 'Total Price']],
@@ -283,20 +283,20 @@ export default function UserOrderDetails() {
           3: { cellWidth: 35, halign: 'right', fontStyle: 'bold' }
         }
       })
-      
+
       // Get final Y position after table (autoTable adds lastAutoTable property)
       const finalY = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY : yPos + (tableData.length * 8) + 20
-      
+
       // Total
       doc.setFontSize(12)
       doc.setFont('helvetica', 'bold')
       doc.text('Total:', 145, finalY + 10, { align: 'right' })
       doc.text(`₹${Number(pricing.total || 0).toFixed(2)}`, 195, finalY + 10, { align: 'right' })
-      
+
       // Save PDF instantly
       const fileName = `Order_Summary_${orderIdDisplay}_${Date.now()}.pdf`
       doc.save(fileName)
-      
+
       toast.success("Summary downloaded successfully!")
     } catch (error) {
       console.error("Error generating PDF:", error)
@@ -361,7 +361,7 @@ export default function UserOrderDetails() {
             <button
               type="button"
               onClick={handleCallRestaurant}
-              className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-[#E23744] hover:bg-red-50"
+              className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-[#EB590E] hover:bg-orange-50"
             >
               <Phone className="w-4 h-4" />
             </button>
@@ -383,14 +383,12 @@ export default function UserOrderDetails() {
             <div key={idx} className="flex justify-between items-start mt-2">
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-3 h-3 border ${
-                    item.isVeg ? "border-green-600" : "border-red-600"
-                  } flex items-center justify-center p-[1px]`}
+                  className={`w-3 h-3 border ${item.isVeg ? "border-green-600" : "border-red-600"
+                    } flex items-center justify-center p-[1px]`}
                 >
                   <div
-                    className={`w-full h-full rounded-full ${
-                      item.isVeg ? "bg-green-600" : "bg-red-600"
-                    }`}
+                    className={`w-full h-full rounded-full ${item.isVeg ? "bg-green-600" : "bg-red-600"
+                      }`}
                   />
                 </div>
                 <span className="text-sm text-gray-700 font-medium">
@@ -414,7 +412,7 @@ export default function UserOrderDetails() {
             <button
               type="button"
               onClick={handleDownloadSummary}
-              className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center text-[#E23744] hover:bg-red-100"
+              className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center text-[#EB590E] hover:bg-orange-100"
             >
               <Download className="w-4 h-4" />
             </button>
@@ -441,17 +439,15 @@ export default function UserOrderDetails() {
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Delivery partner fee</span>
-              <div>
-                {pricing.originalDeliveryFee && (
-                  <span className="text-gray-400 line-through mr-1">
-                    ₹{Number(pricing.originalDeliveryFee).toFixed(2)}
-                  </span>
-                )}
-                <span className="text-blue-500 font-medium uppercase">
-                  {pricing.deliveryFee ? `₹${Number(pricing.deliveryFee).toFixed(2)}` : "Free"}
+              <span className="text-gray-400 font-medium">Delivery fee</span>
+              {pricing.deliveryFee === 0 && (
+                <span className="text-[#EB590E] text-[10px] font-bold border border-[#EB590E] px-1 rounded ml-1">
+                  FREE
                 </span>
-              </div>
+              )}
+              <span className="text-[#EB590E] font-medium uppercase">
+                {pricing.deliveryFee ? `₹${Number(pricing.deliveryFee).toFixed(2)}` : "Free"}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Platform fee</span>
@@ -476,7 +472,7 @@ export default function UserOrderDetails() {
 
           {/* Savings Banner */}
           {savings > 0 && (
-            <div className="relative bg-blue-50 p-3 pb-4 mt-2">
+            <div className="relative bg-orange-50 p-3 pb-4 mt-2">
               <div className="absolute -top-1.5 left-0 w-full overflow-hidden leading-none">
                 <svg
                   className="relative block w-[calc(100%+1.3px)] h-[8px]"
@@ -485,14 +481,14 @@ export default function UserOrderDetails() {
                   preserveAspectRatio="none"
                 >
                   <path
-                    d="M0,0V46.29c47,0,47,69.5,94,69.5s47-69.5,94-69.5,47,69.5,94,69.5,47-69.5,94-69.5,47,69.5,94,69.5,47-69.5,94-69.5,47,69.5,94,69.5,47-69.5,94-69.5,47,69.5,94,69.5,47-69.5,94-69.5,47,69.5,94,69.5V0Z"
+                    d="M0,0V46.29c47,0,47,69.5,94,69.5s47-69.5,94-69.5,47,69.5,94,69.5,47-69.5,94-69.5,47,69.5,94,69.5,47-69.5,94-69.5,47,69.5,94,69.5,47-69.5,94-69.5,47,69.5,94,69.5V0Z"
                     fill="#ffffff"
                     className="fill-white"
                   />
                 </svg>
               </div>
 
-              <div className="flex items-center justify-center gap-2 pt-1 text-blue-600 font-bold text-sm">
+              <div className="flex items-center justify-center gap-2 pt-1 text-[#EB590E] font-bold text-sm">
                 <span>🎉</span>
                 <span>
                   You saved ₹{Number(savings).toFixed(2)} on this order!
@@ -566,8 +562,8 @@ export default function UserOrderDetails() {
       <div className="fixed bottom-0 w-full bg-white border-t border-gray-200 p-4 flex gap-3 z-20">
         <button
           type="button"
-          onClick={() => navigate(`/user/restaurants/${order.restaurantId || ""}`)}
-          className="flex-1 bg-[#E23744] text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-red-600 transition-colors"
+          onClick={() => handleReorder(order)}
+          className="flex-1 bg-[#EB590E] text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-[#D94F0C] transition-colors"
         >
           <RotateCcw className="w-4 h-4" />
           Reorder
@@ -575,7 +571,7 @@ export default function UserOrderDetails() {
         <button
           type="button"
           onClick={handleDownloadSummary}
-          className="flex-1 bg-white border border-[#E23744] text-[#E23744] py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-red-50 transition-colors"
+          className="flex-1 bg-white border border-[#EB590E] text-[#EB590E] py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-orange-50 transition-colors"
         >
           <Download className="w-4 h-4" />
           Invoice
@@ -591,21 +587,21 @@ export default function UserOrderDetails() {
               // Use MongoDB _id (ObjectId) for the API call - backend complaint controller expects ObjectId
               // Priority: order._id (MongoDB ObjectId) > orderId from route params
               const orderMongoId = order._id || orderId
-              
+
               if (!orderMongoId) {
-                console.error("Order ID not available:", { 
+                console.error("Order ID not available:", {
                   order: order ? { _id: order._id, orderId: order.orderId } : null,
-                  routeOrderId: orderId 
+                  routeOrderId: orderId
                 })
                 toast.error("Order ID not available. Please refresh the page.")
                 return
               }
-              
+
               // Convert to string if it's an ObjectId object
-              const orderIdString = typeof orderMongoId === 'object' && orderMongoId.toString 
-                ? orderMongoId.toString() 
+              const orderIdString = typeof orderMongoId === 'object' && orderMongoId.toString
+                ? orderMongoId.toString()
                 : String(orderMongoId)
-              
+
               console.log("Navigating to complaint page with orderId:", orderIdString)
               navigate(`/user/complaints/submit/${encodeURIComponent(orderIdString)}`)
             }}

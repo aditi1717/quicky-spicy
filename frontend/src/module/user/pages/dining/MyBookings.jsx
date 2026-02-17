@@ -139,9 +139,9 @@ export default function MyBookings() {
                             <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-start">
                                     <h3 className="font-bold text-gray-900 truncate">{booking.restaurant?.name}</h3>
-                                    <Badge className={`${booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                                        booking.status === 'checked-in' ? 'bg-orange-100 text-orange-700' :
-                                            booking.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                                    <Badge className={`${booking.status === 'confirmed' ? 'bg-[#FFF2EB] text-[#EB590E]' :
+                                        booking.status === 'checked-in' ? 'bg-[#FFF2EB] text-[#EB590E]' :
+                                            booking.status === 'completed' ? 'bg-[#FFF2EB] text-[#EB590E]' :
                                                 'bg-slate-100 text-slate-700'
                                         }`}>
                                         {booking.status}

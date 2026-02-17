@@ -15,7 +15,7 @@ const notifications = [
     time: "2 minutes ago",
     read: false,
     icon: CheckCircle2,
-    iconColor: "text-green-600"
+    iconColor: "text-[#EB590E]"
   },
   {
     id: 2,
@@ -25,7 +25,7 @@ const notifications = [
     time: "1 hour ago",
     read: false,
     icon: Tag,
-    iconColor: "text-red-600"
+    iconColor: "text-[#EB590E]"
   },
   {
     id: 3,
@@ -35,7 +35,7 @@ const notifications = [
     time: "3 hours ago",
     read: true,
     icon: Gift,
-    iconColor: "text-blue-600"
+    iconColor: "text-[#EB590E]"
   },
   {
     id: 4,
@@ -45,7 +45,7 @@ const notifications = [
     time: "Yesterday",
     read: true,
     icon: CheckCircle2,
-    iconColor: "text-green-600"
+    iconColor: "text-[#EB590E]"
   },
   {
     id: 5,
@@ -65,7 +65,7 @@ const notifications = [
     time: "3 days ago",
     read: true,
     icon: Tag,
-    iconColor: "text-red-600"
+    iconColor: "text-[#EB590E]"
   }
 ]
 
@@ -83,10 +83,10 @@ export default function Notifications() {
             </Button>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3 flex-1">
-            <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-red-600 fill-red-600" />
+            <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-[#EB590E] fill-[#EB590E]" />
             <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white">Notifications</h1>
             {unreadCount > 0 && (
-              <Badge className="bg-red-600 text-white text-xs md:text-sm">
+              <Badge className="bg-[#EB590E] text-white text-xs md:text-sm">
                 {unreadCount}
               </Badge>
             )}
@@ -100,32 +100,29 @@ export default function Notifications() {
             return (
               <Card
                 key={notification.id}
-                className={`relative cursor-pointer transition-all duration-200 py-1 hover:shadow-md ${
-                  !notification.read ? "bg-red-50/50 dark:bg-red-900/20 border-red-200 dark:border-red-800" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                }`}
+                className={`relative cursor-pointer transition-all duration-200 py-1 hover:shadow-md ${!notification.read ? "bg-red-50/50 dark:bg-red-900/20 border-red-200 dark:border-red-800" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                  }`}
               >
                 {/* Unread Dot - Top Right */}
                 {!notification.read && (
-                  <div className="absolute top-2 right-2 w-2.5 h-2.5 md:w-3 md:h-3 bg-red-600 rounded-full" />
+                  <div className="absolute top-2 right-2 w-2.5 h-2.5 md:w-3 md:h-3 bg-[#EB590E] rounded-full" />
                 )}
-                
+
                 <CardContent className="p-3 md:p-4 lg:p-5">
                   <div className="flex items-start gap-3 sm:gap-4 md:gap-5">
                     {/* Icon */}
-                    <div className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center ${
-                      notification.type === "order" ? "bg-green-100 dark:bg-green-900/40" :
-                      notification.type === "offer" ? "bg-red-100 dark:bg-red-900/40" :
-                      notification.type === "promotion" ? "bg-blue-100 dark:bg-blue-900/40" :
-                      "bg-orange-100 dark:bg-orange-900/40"
-                    }`}>
+                    <div className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center ${notification.type === "order" ? "bg-green-100 dark:bg-green-900/40" :
+                        notification.type === "offer" ? "bg-red-100 dark:bg-red-900/40" :
+                          notification.type === "promotion" ? "bg-blue-100 dark:bg-blue-900/40" :
+                            "bg-orange-100 dark:bg-orange-900/40"
+                      }`}>
                       <Icon className={`h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 ${notification.iconColor}`} />
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <h3 className={`text-sm sm:text-base md:text-lg font-semibold mb-1 md:mb-2 ${
-                        !notification.read ? "text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300"
-                      }`}>
+                      <h3 className={`text-sm sm:text-base md:text-lg font-semibold mb-1 md:mb-2 ${!notification.read ? "text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300"
+                        }`}>
                         {notification.title}
                       </h3>
                       <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 mb-2 md:mb-3 line-clamp-2">

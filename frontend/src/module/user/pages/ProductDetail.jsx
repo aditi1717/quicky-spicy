@@ -241,10 +241,10 @@ export default function ProductDetail() {
       <Star
         key={i}
         className={`${size} ${i < Math.floor(rating)
-            ? "fill-yellow-400 text-yellow-400"
-            : i < rating
-              ? "fill-yellow-200 text-yellow-200"
-              : "fill-gray-300 text-gray-300"
+          ? "fill-yellow-400 text-yellow-400"
+          : i < rating
+            ? "fill-yellow-200 text-yellow-200"
+            : "fill-gray-300 text-gray-300"
           }`}
       />
     ))
@@ -354,11 +354,11 @@ export default function ProductDetail() {
               <h2 className="text-xl font-bold">Order</h2>
               {inCart ? (
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 border border-yellow-500 rounded-lg">
+                  <div className="flex items-center gap-2 border border-[#EB590E] rounded-lg">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-10 w-10 hover:bg-yellow-50"
+                      className="h-10 w-10 hover:bg-[#FFF2EB]"
                       onClick={handleDecrease}
                     >
                       <Minus className="h-5 w-5" />
@@ -369,7 +369,7 @@ export default function ProductDetail() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-10 w-10 hover:bg-yellow-50"
+                      className="h-10 w-10 hover:bg-[#FFF2EB]"
                       onClick={handleIncrease}
                     >
                       <Plus className="h-5 w-5" />
@@ -533,7 +533,7 @@ export default function ProductDetail() {
                 )}
               </div> */}
 
-              {/* {showReviewForm && (
+          {/* {showReviewForm && (
                 <div className="space-y-4 pb-4 border-b">
                   <h3 className="text-lg font-semibold">Write Your Review</h3>
                   <form onSubmit={handleSubmitReview} className="space-y-4">
@@ -590,7 +590,7 @@ export default function ProductDetail() {
                 </div>
               )} */}
 
-              {/* <div className="space-y-4">
+          {/* <div className="space-y-4">
                 {reviews.length > 0 ? (
                   reviews.map((review, index) => (
                     <ScrollReveal key={review.id} delay={index * 0.05}>
@@ -736,7 +736,7 @@ export default function ProductDetail() {
                   </div>
                 )}
               </div> */}
-            {/* </div>
+          {/* </div>
           </ScrollReveal> */}
         </div>
       </div>

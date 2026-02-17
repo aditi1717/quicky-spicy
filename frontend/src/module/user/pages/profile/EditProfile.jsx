@@ -54,28 +54,28 @@ const saveProfileToStorage = (data) => {
 export default function EditProfile() {
   const navigate = useNavigate()
   const { userProfile, updateUserProfile } = useProfile()
-  
+
   // Load from localStorage or use context
   const storedProfile = loadProfileFromStorage()
   const initialProfile = storedProfile || userProfile || {}
-  
+
   const initialFormData = {
     name: initialProfile.name ?? "",
     mobile: initialProfile.mobile ?? initialProfile.phone ?? "",
     email: initialProfile.email ?? "",
-    dateOfBirth: initialProfile.dateOfBirth 
-      ? (typeof initialProfile.dateOfBirth === 'string' 
-        ? dayjs(initialProfile.dateOfBirth) 
+    dateOfBirth: initialProfile.dateOfBirth
+      ? (typeof initialProfile.dateOfBirth === 'string'
+        ? dayjs(initialProfile.dateOfBirth)
         : dayjs(initialProfile.dateOfBirth))
       : null,
-    anniversary: initialProfile.anniversary 
-      ? (typeof initialProfile.anniversary === 'string' 
-        ? dayjs(initialProfile.anniversary) 
+    anniversary: initialProfile.anniversary
+      ? (typeof initialProfile.anniversary === 'string'
+        ? dayjs(initialProfile.anniversary)
         : dayjs(initialProfile.anniversary))
       : null,
     gender: initialProfile.gender ?? "",
   }
-  
+
   const [formData, setFormData] = useState(initialFormData)
   const [initialData] = useState(initialFormData)
   const [hasChanges, setHasChanges] = useState(false)
@@ -93,20 +93,20 @@ export default function EditProfile() {
       name: profile.name ?? "",
       mobile: profile.mobile ?? profile.phone ?? "",
       email: profile.email ?? "",
-      dateOfBirth: profile.dateOfBirth 
-        ? (typeof profile.dateOfBirth === 'string' 
-          ? dayjs(profile.dateOfBirth) 
+      dateOfBirth: profile.dateOfBirth
+        ? (typeof profile.dateOfBirth === 'string'
+          ? dayjs(profile.dateOfBirth)
           : dayjs(profile.dateOfBirth))
         : null,
-      anniversary: profile.anniversary 
-        ? (typeof profile.anniversary === 'string' 
-          ? dayjs(profile.anniversary) 
+      anniversary: profile.anniversary
+        ? (typeof profile.anniversary === 'string'
+          ? dayjs(profile.anniversary)
           : dayjs(profile.anniversary))
         : null,
       gender: profile.gender ?? "",
     }
     setFormData(newFormData)
-    
+
     // Update profile image
     if (profile.profileImage) {
       setProfileImage(profile.profileImage)
@@ -166,15 +166,15 @@ export default function EditProfile() {
       setIsUploadingImage(true)
       const response = await userAPI.uploadProfileImage(file)
       const imageUrl = response?.data?.data?.profileImage || response?.data?.profileImage
-      
+
       if (imageUrl) {
         setProfileImage(imageUrl)
         setImagePreview(imageUrl)
         toast.success('Profile image uploaded successfully')
-        
+
         // Update context
         updateUserProfile({ profileImage: imageUrl })
-        
+
         // Dispatch event to refresh profile
         window.dispatchEvent(new Event("userAuthChanged"))
       }
@@ -232,7 +232,7 @@ export default function EditProfile() {
         window.dispatchEvent(new Event("userAuthChanged"))
 
         toast.success('Profile updated successfully')
-        
+
         // Navigate back
         navigate("/user/profile")
       }
@@ -259,7 +259,7 @@ export default function EditProfile() {
       {/* Header */}
       <div className="bg-white dark:bg-[#1a1a1a] sticky top-0 z-10 border-b border-gray-100 dark:border-gray-800">
         <div className="max-w-7xl mx-auto flex items-center gap-3 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-4 md:py-5 lg:py-6">
-          <button 
+          <button
             onClick={() => navigate(-1)}
             className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0"
           >
@@ -274,22 +274,22 @@ export default function EditProfile() {
         {/* Avatar Section */}
         <div className="flex justify-center">
           <div className="relative">
-            <Avatar className="h-24 w-24 bg-blue-400 border-0">
+            <Avatar className="h-24 w-24 bg-[#EB590E] border-0">
               {imagePreview && (
-                <AvatarImage 
-                  src={imagePreview} 
+                <AvatarImage
+                  src={imagePreview}
                   alt={formData.name || 'User'}
                 />
               )}
-              <AvatarFallback className="bg-blue-400 text-white text-3xl font-semibold">
+              <AvatarFallback className="bg-[#EB590E] text-white text-3xl font-semibold">
                 {avatarInitial}
               </AvatarFallback>
             </Avatar>
             {/* Edit Icon */}
-            <button 
+            <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploadingImage}
-              className="absolute bottom-0 right-0 w-8 h-8 bg-green-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="absolute bottom-0 right-0 w-8 h-8 bg-[#EB590E] rounded-full flex items-center justify-center shadow-lg border-2 border-white hover:bg-[#D94F0C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isUploadingImage ? (
                 <Loader2 className="h-4 w-4 text-white animate-spin" />
@@ -321,7 +321,7 @@ export default function EditProfile() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleChange('name', e.target.value)}
-                  className="pr-10 h-12 text-base border border-gray-300 dark:border-gray-700 focus:border-green-600 focus:ring-1 focus:ring-green-600 rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white"
+                  className="pr-10 h-12 text-base border border-gray-300 dark:border-gray-700 focus:border-[#EB590E] focus:ring-1 focus:ring-[#EB590E] rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white"
                   placeholder="Name"
                 />
                 {formData.name && (
@@ -347,7 +347,7 @@ export default function EditProfile() {
                   type="tel"
                   value={formData.mobile}
                   onChange={(e) => handleChange('mobile', e.target.value)}
-                  className="flex-1 h-12 text-base  border border-gray-300 dark:border-gray-700 focus:border-green-600 focus:ring-1 focus:ring-green-600 rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white"
+                  className="flex-1 h-12 text-base  border border-gray-300 dark:border-gray-700 focus:border-[#EB590E] focus:ring-1 focus:ring-[#EB590E] rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white"
                   placeholder="Mobile"
                 />
               </div>
@@ -364,7 +364,7 @@ export default function EditProfile() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleChange('email', e.target.value)}
-                  className="flex-1 h-12 text-base border border-gray-300 dark:border-gray-700 focus:border-green-600 focus:ring-1 focus:ring-green-600 rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white"
+                  className="flex-1 h-12 text-base border border-gray-300 dark:border-gray-700 focus:border-[#EB590E] focus:ring-1 focus:ring-[#EB590E] rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white"
                   placeholder="Email"
                 />
               </div>
@@ -393,7 +393,7 @@ export default function EditProfile() {
                             borderColor: '#9ca3af',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: '#16a34a',
+                            borderColor: '#EB590E',
                             borderWidth: '1px',
                           },
                         },
@@ -431,7 +431,7 @@ export default function EditProfile() {
                             borderColor: '#9ca3af',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: '#16a34a',
+                            borderColor: '#EB590E',
                             borderWidth: '1px',
                           },
                         },
@@ -455,7 +455,7 @@ export default function EditProfile() {
                 value={formData.gender || ""}
                 onValueChange={(value) => handleChange('gender', value)}
               >
-                <SelectTrigger className="h-12 text-base border border-gray-300 dark:border-gray-700 focus:border-green-600 focus:ring-1 focus:ring-green-600 rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white">
+                <SelectTrigger className="h-12 text-base border border-gray-300 dark:border-gray-700 focus:border-[#EB590E] focus:ring-1 focus:ring-[#EB590E] rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white">
                   <SelectValue placeholder="Gender" />
                 </SelectTrigger>
                 <SelectContent>
@@ -474,11 +474,10 @@ export default function EditProfile() {
         <Button
           onClick={handleUpdate}
           disabled={!hasChanges || isSaving || isUploadingImage}
-          className={`w-full h-14 rounded-xl font-semibold text-base transition-all ${
-            hasChanges && !isSaving && !isUploadingImage
-              ? 'bg-green-600 hover:bg-green-700 text-white'
+          className={`w-full h-14 rounded-xl font-semibold text-base transition-all ${hasChanges && !isSaving && !isUploadingImage
+              ? 'bg-[#EB590E] hover:bg-[#D94F0C] text-white'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          }`}
+            }`}
         >
           {isSaving ? (
             <>

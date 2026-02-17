@@ -1,12 +1,12 @@
 import { useParams, Link, useNavigate } from "react-router-dom"
-import { 
-  ArrowLeft, 
-  Package, 
-  AlertCircle, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  Truck, 
+import {
+  ArrowLeft,
+  Package,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Truck,
   MessageCircle,
   Phone,
   Mail,
@@ -131,9 +131,9 @@ export default function OrderHelp() {
   const formatDate = (dateString) => {
     if (!dateString) return "N/A"
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -143,13 +143,13 @@ export default function OrderHelp() {
   const getStatusColor = (status) => {
     switch (status) {
       case "confirmed":
-        return "bg-blue-500"
+        return "bg-[#EB590E]"
       case "preparing":
         return "bg-primary-orange"
       case "outForDelivery":
         return "bg-orange-500"
       case "delivered":
-        return "bg-green-500"
+        return "bg-[#EB590E]"
       default:
         return "bg-gray-500"
     }
@@ -408,8 +408,8 @@ export default function OrderHelp() {
             <CardContent className="space-y-4 md:space-y-5 lg:space-y-6 p-4 md:p-5 lg:p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 lg:gap-6">
                 <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Phone className="h-5 w-5 text-blue-600" />
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <Phone className="h-5 w-5 text-[#EB590E]" />
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1">Phone Support</h3>
@@ -425,8 +425,8 @@ export default function OrderHelp() {
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <Mail className="h-5 w-5 text-green-600" />
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <Mail className="h-5 w-5 text-[#EB590E]" />
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1">Email Support</h3>

@@ -125,10 +125,10 @@ export default function Coffee() {
           {stores.map((store, index) => {
             const storeSlug = store.name.toLowerCase().replace(/\s+/g, "-")
             const isHighRating = store.rating >= 4.0
-            
+
             return (
-              <Link 
-                key={store.id} 
+              <Link
+                key={store.id}
                 to={`/user/restaurants/${storeSlug}`}
                 className="block"
               >
@@ -164,13 +164,12 @@ export default function Coffee() {
 
                     {/* Rating Badge */}
                     <div className="mb-2">
-                      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded ${
-                        isHighRating 
-                          ? 'bg-green-600 text-white' 
-                          : 'bg-yellow-400 text-gray-900'
-                      }`}>
+                      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded ${isHighRating
+                          ? 'bg-green-600 text-white'
+                          : 'bg-[#EB590E] text-white'
+                        }`}>
                         <span className="text-sm font-semibold">{store.rating}</span>
-                        <Star className={`h-3 w-3 ${isHighRating ? 'fill-white text-white' : 'fill-gray-900 text-gray-900'}`} />
+                        <Star className={`h-3 w-3 ${isHighRating ? 'fill-white text-white' : 'fill-white text-white'}`} />
                       </div>
                     </div>
 
@@ -185,7 +184,7 @@ export default function Coffee() {
                         {store.price}
                       </p>
                       {store.offer && (
-                        <span className="text-sm font-medium text-blue-600">
+                        <span className="text-sm font-medium text-[#EB590E]">
                           {store.offer}
                         </span>
                       )}
@@ -249,14 +248,14 @@ export default function Coffee() {
         <div className="max-w-4xl mx-auto">
           {/* Header Section */}
           <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            Starbucks Coffee
-          </h1>
-          <p className="text-sm sm:text-base text-gray-500">
-            Cafe, Coffee, Beverages
-          </p>
-          <div className="h-px bg-gray-200 mt-4"></div>
-        </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+              Starbucks Coffee
+            </h1>
+            <p className="text-sm sm:text-base text-gray-500">
+              Cafe, Coffee, Beverages
+            </p>
+            <div className="h-px bg-gray-200 mt-4"></div>
+          </div>
 
           {/* Multiple Store Lists */}
           {renderStoreList(starbucksStores, "DINING OUTLETS NEAR YOU")}

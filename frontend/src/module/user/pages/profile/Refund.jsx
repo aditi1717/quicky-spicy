@@ -70,7 +70,7 @@ export default function Refund() {
           className="p-6 md:p-8 lg:p-10"
         >
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
-            <Receipt className="h-6 w-6 md:h-7 md:w-7 text-green-600 dark:text-green-400" />
+            <Receipt className="h-6 w-6 md:h-7 md:w-7 text-[#EB590E] dark:text-[#F97316]" />
             {refundData.title}
           </h2>
           <div
@@ -81,7 +81,7 @@ export default function Refund() {
               prose-ul:text-gray-700 dark:prose-ul:text-gray-300
               prose-ol:text-gray-700 dark:prose-ol:text-gray-300
               prose-li:text-gray-700 dark:prose-li:text-gray-300
-              prose-a:text-green-600 dark:prose-a:text-green-400
+              prose-a:text-[#EB590E] dark:prose-a:text-[#F97316]
               prose-a:no-underline hover:prose-a:underline
               leading-relaxed"
             dangerouslySetInnerHTML={{ __html: refundData.content }}

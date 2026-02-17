@@ -65,7 +65,7 @@ export default function RedeemGoldCoupon() {
                   <Button
                     onClick={handleRedeem}
                     disabled={!couponCode.trim()}
-                    className="bg-green-600 hover:bg-green-700 text-white"
+                    className="bg-[#EB590E] hover:bg-[#D94F0C] text-white"
                   >
                     Redeem
                   </Button>
@@ -108,7 +108,7 @@ export default function RedeemGoldCoupon() {
                   setIsRedeemed(false)
                   setCouponCode("")
                 }}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-[#EB590E] hover:bg-[#D94F0C] text-white"
               >
                 Redeem Another
               </Button>

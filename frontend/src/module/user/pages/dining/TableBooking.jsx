@@ -226,7 +226,7 @@ export default function TableBooking() {
                                     {slot.time}
                                 </span>
                                 {slot.discount !== "No OFF" && (
-                                    <span className={`text-[10px] font-bold ${selectedSlot?.time === slot.time ? "text-white/90" : "text-blue-500"
+                                    <span className={`text-[10px] font-bold ${selectedSlot?.time === slot.time ? "text-white/90" : "text-[#EB590E]"
                                         }`}>
                                         {slot.discount}
                                     </span>

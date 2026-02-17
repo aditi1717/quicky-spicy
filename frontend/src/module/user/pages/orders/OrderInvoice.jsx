@@ -32,9 +32,9 @@ export default function OrderInvoice() {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -44,7 +44,7 @@ export default function OrderInvoice() {
   const handlePrint = () => {
     const printWindow = window.open('', '_blank')
     const printContent = invoiceRef.current.innerHTML
-    
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -57,14 +57,14 @@ export default function OrderInvoice() {
               color: #333;
             }
             .invoice-header {
-              border-bottom: 2px solid #16a34a;
+              border-bottom: 2px solid #EB590E;
               padding-bottom: 20px;
               margin-bottom: 30px;
             }
             .invoice-title {
               font-size: 32px;
               font-weight: bold;
-              color: #16a34a;
+              color: #EB590E;
               margin-bottom: 10px;
             }
             .invoice-details {
@@ -87,7 +87,7 @@ export default function OrderInvoice() {
               border-bottom: 1px solid #ddd;
             }
             th {
-              background-color: #dcfce7;
+              background-color: #fed7aa;
               font-weight: bold;
             }
             .total-section {
@@ -101,8 +101,8 @@ export default function OrderInvoice() {
             .grand-total {
               font-size: 24px;
               font-weight: bold;
-              color: #16a34a;
-              border-top: 2px solid #16a34a;
+              color: #EB590E;
+              border-top: 2px solid #EB590E;
               padding-top: 10px;
             }
             @media print {
@@ -154,7 +154,7 @@ export default function OrderInvoice() {
               </Button>
               <Button
                 onClick={handleDownloadPDF}
-                className="bg-green-600 hover:bg-green-700 flex items-center gap-2 text-xs sm:text-sm h-9 sm:h-10"
+                className="bg-[#EB590E] hover:bg-[#D94F0C] flex items-center gap-2 text-xs sm:text-sm h-9 sm:h-10"
               >
                 <Download className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                 <span className="hidden sm:inline text-white">Download PDF</span>
@@ -170,15 +170,15 @@ export default function OrderInvoice() {
               {/* Invoice Header */}
               <div className="invoice-header">
                 <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                  <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
-                  <h2 className="invoice-title text-xl sm:text-2xl md:text-3xl text-green-600 font-bold">INVOICE</h2>
+                  <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-[#EB590E]" />
+                  <h2 className="invoice-title text-xl sm:text-2xl md:text-3xl text-[#EB590E] font-bold">INVOICE</h2>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
                   <div>
                     <p className="text-xs sm:text-sm text-muted-foreground">{companyName}</p>
                     <p className="text-xs sm:text-sm text-muted-foreground">Food Delivery Platform</p>
                   </div>
-                  <Badge className="bg-green-600 text-white text-sm sm:text-base md:text-lg px-3 sm:px-4 py-1.5 sm:py-2 w-fit">
+                  <Badge className="bg-[#EB590E] text-white text-sm sm:text-base md:text-lg px-3 sm:px-4 py-1.5 sm:py-2 w-fit">
                     {order.status.toUpperCase()}
                   </Badge>
                 </div>
@@ -259,7 +259,7 @@ export default function OrderInvoice() {
                   <span>Tax:</span>
                   <span>${order.tax.toFixed(2)}</span>
                 </div>
-                <div className="grand-total flex justify-between text-base sm:text-lg md:text-xl md:text-2xl pt-2 sm:pt-3 mt-2 sm:mt-3 border-t-2 border-green-600">
+                <div className="grand-total flex justify-between text-base sm:text-lg md:text-xl md:text-2xl pt-2 sm:pt-3 mt-2 sm:mt-3 border-t-2 border-[#EB590E]">
                   <span>Total:</span>
                   <span>${order.total.toFixed(2)}</span>
                 </div>
