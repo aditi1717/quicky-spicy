@@ -71,7 +71,7 @@ export default function Checkout() {
 
   if (cart.length === 0) {
     return (
-      <AnimatedPage className="min-h-screen bg-gradient-to-b from-yellow-50/30 via-white to-orange-50/20 p-4">
+      <AnimatedPage className="min-h-screen bg-gradient-to-b from-orange-50/30 via-white to-orange-50/20 p-4">
         <div className="max-w-4xl mx-auto space-y-6">
           <Card>
             <CardHeader>
@@ -92,7 +92,7 @@ export default function Checkout() {
   }
 
   return (
-    <AnimatedPage className="min-h-screen bg-gradient-to-b from-yellow-50/30 via-white to-orange-50/20 dark:from-[#0a0a0a] dark:via-[#1a1a1a] dark:to-[#0a0a0a] p-4 sm:p-6 md:p-8">
+    <AnimatedPage className="min-h-screen bg-gradient-to-b from-orange-50/30 via-white to-orange-50/20 dark:from-[#0a0a0a] dark:via-[#1a1a1a] dark:to-[#0a0a0a] p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
         <ScrollReveal>
           <div className="flex items-center gap-4 mb-6 md:mb-8">
@@ -113,7 +113,7 @@ export default function Checkout() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-yellow-600" />
+                    <MapPin className="h-5 w-5 text-[#EB590E]" />
                     Delivery Address
                   </CardTitle>
                 </CardHeader>
@@ -131,22 +131,21 @@ export default function Checkout() {
                         return (
                           <div
                             key={address.id}
-                            className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
-                              isSelected
-                                ? "border-yellow-500 bg-yellow-50"
-                                : "border-gray-200 hover:border-yellow-300"
-                            }`}
+                            className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${isSelected
+                                ? "border-[#EB590E] bg-orange-50"
+                                : "border-gray-200 hover:border-orange-300"
+                              }`}
                             onClick={() => setSelectedAddress(address.id)}
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 {address.isDefault && (
-                                  <Badge className="mb-2 bg-yellow-500 text-white">Default</Badge>
+                                  <Badge className="mb-2 bg-[#EB590E] text-white">Default</Badge>
                                 )}
                                 <p className="text-sm font-medium">{addressString}</p>
                               </div>
                               {isSelected && (
-                                <CheckCircle className="h-5 w-5 text-yellow-600" />
+                                <CheckCircle className="h-5 w-5 text-[#EB590E]" />
                               )}
                             </div>
                           </div>
@@ -170,7 +169,7 @@ export default function Checkout() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5 text-yellow-600" />
+                    <CreditCard className="h-5 w-5 text-[#EB590E]" />
                     Payment Method
                   </CardTitle>
                 </CardHeader>
@@ -184,18 +183,17 @@ export default function Checkout() {
                         return (
                           <div
                             key={payment.id}
-                            className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
-                              isSelected
-                                ? "border-yellow-500 bg-yellow-50"
-                                : "border-gray-200 hover:border-yellow-300"
-                            }`}
+                            className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${isSelected
+                                ? "border-[#EB590E] bg-orange-50"
+                                : "border-gray-200 hover:border-orange-300"
+                              }`}
                             onClick={() => setSelectedPayment(payment.id)}
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
                                   {payment.isDefault && (
-                                    <Badge className="bg-yellow-500 text-white">Default</Badge>
+                                    <Badge className="bg-[#EB590E] text-white">Default</Badge>
                                   )}
                                   <Badge variant="outline" className="capitalize">
                                     {payment.type}
@@ -207,7 +205,7 @@ export default function Checkout() {
                                 </p>
                               </div>
                               {isSelected && (
-                                <CheckCircle className="h-5 w-5 text-yellow-600" />
+                                <CheckCircle className="h-5 w-5 text-[#EB590E]" />
                               )}
                             </div>
                           </div>
@@ -276,12 +274,12 @@ export default function Checkout() {
                     </div>
                     <div className="flex justify-between font-bold text-lg md:text-xl lg:text-2xl pt-2 md:pt-3 border-t dark:border-gray-700">
                       <span className="dark:text-white">Total</span>
-                      <span className="text-yellow-600 dark:text-yellow-400">₹{total.toFixed(0)}</span>
+                      <span className="text-[#EB590E] dark:text-orange-400">₹{total.toFixed(0)}</span>
                     </div>
                   </div>
 
                   <Button
-                    className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white mt-4 md:mt-6 h-11 md:h-12 text-sm md:text-base"
+                    className="w-full bg-[#EB590E] hover:bg-[#D94F0C] text-white mt-4 md:mt-6 h-11 md:h-12 text-sm md:text-base border-none"
                     onClick={handlePlaceOrder}
                     disabled={isPlacingOrder || !selectedAddress || !selectedPayment}
                   >

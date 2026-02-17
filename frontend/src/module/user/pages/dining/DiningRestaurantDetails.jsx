@@ -82,7 +82,7 @@ export default function DiningRestaurantDetails() {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-slate-50">
-                <Loader2 className="w-8 h-8 animate-spin text-red-500" />
+                <Loader2 className="w-8 h-8 animate-spin text-[#EB590E]" />
             </div>
         )
     }
@@ -186,17 +186,17 @@ export default function DiningRestaurantDetails() {
             <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 gap-3">
                 <Button
                     variant="outline"
-                    className="flex-1 border-gray-200 h-10 text-red-500 hover:text-red-600 hover:bg-red-50 font-medium rounded-full"
+                    className="flex-1 border-gray-200 h-10 text-[#EB590E] hover:text-[#D94F0C] hover:bg-orange-50 font-medium rounded-full"
                 >
                     <UtensilsCrossed className="w-4 h-4 mr-2" />
                     Book a table
                 </Button>
 
                 <div className="flex gap-3">
-                    <button className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-red-500 hover:bg-red-50">
+                    <button className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-[#EB590E] hover:bg-orange-50">
                         <Navigation className="w-5 h-5" />
                     </button>
-                    <button className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-red-500 hover:bg-red-50">
+                    <button className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-[#EB590E] hover:bg-orange-50">
                         <Phone className="w-5 h-5" />
                     </button>
                 </div>
@@ -223,12 +223,12 @@ export default function DiningRestaurantDetails() {
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`whitespace-nowrap py-3 text-sm font-medium transition-colors relative ${activeTab === tab ? "text-red-500" : "text-gray-500 hover:text-gray-800"
+                            className={`whitespace-nowrap py-3 text-sm font-medium transition-colors relative ${activeTab === tab ? "text-[#EB590E]" : "text-gray-500 hover:text-gray-800"
                                 }`}
                         >
                             {tab}
                             {activeTab === tab && (
-                                <div className="absolute bottom-0 left-0 w-full h-[2px] bg-red-500 rounded-t-full" />
+                                <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#EB590E] rounded-t-full" />
                             )}
                         </button>
                     ))}
@@ -254,12 +254,12 @@ export default function DiningRestaurantDetails() {
                     <Button
                         variant="outline"
                         onClick={() => setIsBookingOpen(true)}
-                        className="flex-1 h-12 rounded-xl text-red-500 border-red-500 hover:bg-red-50 font-bold"
+                        className="flex-1 h-12 rounded-xl text-[#EB590E] border-[#EB590E] hover:bg-orange-50 font-bold"
                     >
                         Book a table
                     </Button>
                     <Button
-                        className="flex-1 h-12 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold flex flex-col items-center justify-center leading-tight py-1"
+                        className="flex-1 h-12 rounded-xl bg-[#EB590E] hover:bg-[#D94F0C] text-white font-bold flex flex-col items-center justify-center leading-tight py-1"
                     >
                         <span className="text-sm">Pay bill</span>
                         <span className="text-[10px] font-normal opacity-90">Tap to view offers</span>
@@ -306,7 +306,7 @@ export default function DiningRestaurantDetails() {
                                         onBlur={(e) => {
                                             if (!selectedGuests || selectedGuests < 1) setSelectedGuests(1)
                                         }}
-                                        className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-lg font-semibold text-center"
+                                        className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-[#EB590E] focus:ring-1 focus:ring-[#EB590E] transition-all text-lg font-semibold text-center"
                                     />
                                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium pointer-events-none">
                                         Guests
@@ -320,8 +320,8 @@ export default function DiningRestaurantDetails() {
                                             key={num}
                                             onClick={() => setSelectedGuests(num)}
                                             className={`min-w-[40px] h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all flex-shrink-0 ${selectedGuests === num
-                                                ? "bg-red-500 text-white shadow-md transform scale-105"
-                                                : "bg-white border border-gray-200 text-gray-600 hover:border-red-200 hover:bg-red-50"
+                                                ? "bg-[#EB590E] text-white shadow-md transform scale-105"
+                                                : "bg-white border border-gray-200 text-gray-600 hover:border-orange-200 hover:bg-orange-50"
                                                 }`}
                                         >
                                             {num}
@@ -335,7 +335,7 @@ export default function DiningRestaurantDetails() {
                                     setIsBookingOpen(false)
                                     navigate(`/dining/book/${slug}`, { state: { guestCount: selectedGuests } })
                                 }}
-                                className="w-full bg-red-500 hover:bg-red-600 text-white font-bold h-12 rounded-xl"
+                                className="w-full bg-[#EB590E] hover:bg-[#D94F0C] text-white font-bold h-12 rounded-xl"
                             >
                                 Confirm Booking
                             </Button>
