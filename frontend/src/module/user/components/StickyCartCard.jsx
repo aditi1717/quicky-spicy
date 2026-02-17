@@ -41,7 +41,7 @@ export default function StickyCartCard() {
   // Get restaurant info from first cart item or use default
   const restaurantName = cart[0]?.restaurant || "Restaurant"
   const restaurantImage = cart[0]?.image || "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=200&h=200&fit=crop"
-  
+
   // Create restaurant slug from restaurant name
   const restaurantSlug = restaurantName.toLowerCase().replace(/\s+/g, "-")
 
@@ -98,8 +98,8 @@ export default function StickyCartCard() {
               <div className="flex items-center gap-3 p-3 md:p-4">
                 {/* Restaurant Image */}
                 <div className="flex-shrink-0">
-                  <img 
-                    src={restaurantImage} 
+                  <img
+                    src={restaurantImage}
                     alt={restaurantName}
                     className="w-14 h-14 md:w-16 md:h-16 rounded-lg object-cover"
                   />
@@ -117,7 +117,7 @@ export default function StickyCartCard() {
                 </Link>
 
                 {/* View Cart Button */}
-                <Link 
+                <Link
                   to="/user/cart"
                   className="flex-shrink-0 bg-green-600 dark:bg-green-700 hover:bg-green-700 text-white px-4 py-2.5 md:px-5 md:py-3 rounded-lg font-semibold transition-colors"
                 >

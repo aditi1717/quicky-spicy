@@ -44,6 +44,7 @@ import { useProfile } from "../../context/ProfileContext"
 import AddToCartAnimation from "../../components/AddToCartAnimation"
 import { getCompanyNameAsync } from "@/lib/utils/businessSettings"
 import { isModuleAuthenticated } from "@/lib/utils/auth"
+import fssaiLogo from "@/assets/fssai.png"
 
 
 
@@ -399,6 +400,8 @@ export default function RestaurantDetails() {
             menuImages: Array.isArray(apiRestaurant?.menuImages) ? apiRestaurant.menuImages : [],
             // Menu sections for display (will be populated from menu API)
             menuSections: [],
+            // Onboarding data including FSSAI license
+            onboarding: actualRestaurant?.onboarding || apiRestaurant?.onboarding || null,
             // Availability fields for grayscale styling
             isActive: actualRestaurant?.isActive !== false, // Default to true if not specified
             isAcceptingOrders: actualRestaurant?.isAcceptingOrders !== false, // Default to true if not specified
@@ -1369,7 +1372,7 @@ export default function RestaurantDetails() {
       </div>
 
       {/* Main Content Card */}
-      <div className="bg-white dark:bg-[#1a1a1a] rounded-t-3xl relative z-10 min-h-[40vh] pb-[160px] md:pb-[160px]">
+      <div className="bg-white dark:bg-[#1a1a1a] rounded-t-3xl relative z-10 min-h-[40vh]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-4 sm:py-5 md:py-6 lg:py-8 space-y-3 md:space-y-4 lg:space-y-5 pb-0">
           {/* Restaurant Name and Rating */}
           <div className="flex items-start justify-between">
@@ -1501,7 +1504,7 @@ export default function RestaurantDetails() {
               const isExpanded = expandedSections.has(originalIndex)
 
               return (
-                <div key={sectionIndex} id={sectionId} className="space-y-4 scroll-mt-20">
+                <div key={sectionIndex} id={sectionId} className="space-y-1 scroll-mt-20">
                   {/* Section Header */}
                   {sectionIndex === 0 && (
                     <div className="flex items-center justify-between">
@@ -1969,6 +1972,29 @@ export default function RestaurantDetails() {
           </div>
         )}
       </div>
+
+      {/* FSSAI License Information - Bottom of page */}
+      {restaurant?.onboarding?.step3?.fssai?.registrationNumber && (
+        <div className="px-4 py-4 mt-2 mb-24 border-t border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/30 dark:bg-white/5 mx-4 rounded-xl">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-20 flex items-center justify-center bg-white rounded-lg p-1.5 shadow-sm border border-gray-100">
+              <img
+                src={fssaiLogo}
+                alt="FSSAI"
+                className="h-full w-auto object-contain"
+              />
+            </div>
+            <div className="flex-1">
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-widest font-bold mb-1">
+                License No.
+              </p>
+              <p className="text-sm font-semibold text-gray-600 dark:text-gray-300 font-mono tracking-wide">
+                {restaurant.onboarding.step3.fssai.registrationNumber}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Menu Button - Sticky at page bottom right (hidden when filter or menu sheet open) */}
       {!showFilterSheet && !showMenuSheet && !showMenuOptionsSheet && (
@@ -3030,6 +3056,27 @@ export default function RestaurantDetails() {
                         Menu items, prices, photos and descriptions are set directly by the restaurant. In case you see any incorrect information, please report it to us.
                       </p>
                     </div>
+
+                    {/* FSSAI License Information */}
+                    {restaurant?.onboarding?.step3?.fssai?.registrationNumber && (
+                      <div className="mt-4 px-2 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center gap-3 opacity-80 mb-2">
+                        <div className="h-8 w-14 flex items-center justify-center bg-white rounded p-1 border border-gray-100">
+                          <img
+                            src={fssaiLogo}
+                            alt="FSSAI"
+                            className="h-full w-auto object-contain"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide font-medium">
+                            Lic. No.
+                          </p>
+                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                            {restaurant.onboarding.step3.fssai.registrationNumber}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Bottom Handle */}
@@ -3043,12 +3090,16 @@ export default function RestaurantDetails() {
           document.body
         )}
 
-      {/* Add to Cart Animation Component */}
-      <AddToCartAnimation
-        bottomOffset={150}
-        linkTo="/cart"
-        hideOnPages={true}
-      />
+      {/* Add to Cart Animation Component - Rendered via Portal to prevent transform interference */}
+      {typeof window !== "undefined" &&
+        createPortal(
+          <AddToCartAnimation
+            bottomOffset={80}
+            linkTo="/cart"
+            hideOnPages={true}
+          />,
+          document.body
+        )}
     </AnimatedPage>
   )
 }
