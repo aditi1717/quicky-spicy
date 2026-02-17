@@ -2185,7 +2185,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
   // If showing address form, render full-screen address form
   if (showAddressForm) {
     return (
-      <div className="fixed inset-0 z-[10000] bg-white dark:bg-[#0a0a0a] flex flex-col h-screen max-h-screen overflow-hidden">
+      <div className="fixed inset-0 z-[10000] bg-white dark:bg-[#0a0a0a] flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden">
         {/* Header */}
         <div className="flex-shrink-0 bg-white dark:bg-[#1a1a1a] border-b border-gray-100 dark:border-gray-800 px-4 py-3">
           <div className="flex items-center gap-4">
@@ -2216,7 +2216,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         </div>
 
         {/* Map Section - Google Maps */}
-        <div className="flex-shrink-0 relative" style={{ height: '40vh', minHeight: '300px' }}>
+        <div className="flex-shrink-0 relative" style={{ height: '35vh', minHeight: '250px' }}>
           {/* Google Maps Container */}
           <div
             ref={mapContainerRef}
@@ -2224,7 +2224,6 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
             style={{
               width: '100%',
               height: '100%',
-              minHeight: '300px',
               position: 'absolute',
               top: 0,
               left: 0,
@@ -2268,7 +2267,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
 
         {/* Form Section - Scrollable */}
         <div className="flex-1 overflow-y-auto bg-white dark:bg-[#0a0a0a] min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <div className="px-4 py-4 space-y-4 pb-32">
+          <div className="px-4 py-4 space-y-4 pb-48">
             {/* Delivery Details */}
             <div>
               <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
@@ -2303,7 +2302,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
             </div>
 
             {/* Receiver Details */}
-            <div>
+            <div className="mb-6">
               <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
                 Receiver details for this address
               </Label>
@@ -2372,7 +2371,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         </div>
 
         {/* Save Address Button */}
-        <div className="flex-shrink-0 bg-white dark:bg-[#1a1a1a] border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+        <div className="flex-shrink-0 bg-white dark:bg-[#1a1a1a] border-t border-gray-200 dark:border-gray-800 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
           <form onSubmit={handleAddressFormSubmit}>
             <Button
               type="submit"
