@@ -10,6 +10,7 @@ import SettingsDialog from "../../components/orders/SettingsDialog"
 import RefundModal from "../../components/orders/RefundModal"
 import { useOrdersManagement } from "../../components/orders/useOrdersManagement"
 import { Loader2 } from "lucide-react"
+import alertSound from "@/assets/audio/alert.mp3"
 
 // Status configuration with titles, colors, and icons
 const statusConfig = {
@@ -37,38 +38,67 @@ export default function OrdersPage({ statusKey = "all" }) {
   const [selectedOrderForRefund, setSelectedOrderForRefund] = useState(null)
   const seenPendingOrderIdsRef = useRef(new Set())
   const isFirstLoadRef = useRef(true)
+  const fallbackAudioRef = useRef(null)
+
+  const isPendingOrder = useCallback((order) => {
+    const orderStatus = String(order?.orderStatus || "").toLowerCase()
+    const status = String(order?.status || "").toLowerCase()
+    return orderStatus === "pending" || (status === "confirmed" && orderStatus === "accepted")
+  }, [])
 
   const playDefaultRing = useCallback(() => {
     try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext
-      if (!AudioCtx) return
-
-      const ctx = new AudioCtx()
-      const beep = (startAt, frequency = 880, duration = 0.2) => {
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-        osc.type = "sine"
-        osc.frequency.value = frequency
-        gain.gain.value = 0.0001
-        osc.connect(gain)
-        gain.connect(ctx.destination)
-
-        const start = ctx.currentTime + startAt
-        osc.start(start)
-        gain.gain.exponentialRampToValueAtTime(0.25, start + 0.02)
-        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration)
-        osc.stop(start + duration + 0.02)
+      if (!fallbackAudioRef.current) {
+        fallbackAudioRef.current = new Audio(alertSound)
       }
 
-      beep(0, 880, 0.2)
-      beep(0.26, 880, 0.2)
-      beep(0.52, 988, 0.26)
+      const AudioCtx = window.AudioContext || window.webkitAudioContext
+      if (AudioCtx) {
+        const ctx = new AudioCtx()
+        const playWithContext = async () => {
+          if (ctx.state === "suspended") {
+            await ctx.resume()
+          }
 
-      setTimeout(() => {
-        if (ctx.state !== "closed") {
-          ctx.close().catch(() => {})
+          const beep = (startAt, frequency = 880, duration = 0.2) => {
+            const osc = ctx.createOscillator()
+            const gain = ctx.createGain()
+            osc.type = "sine"
+            osc.frequency.value = frequency
+            gain.gain.value = 0.0001
+            osc.connect(gain)
+            gain.connect(ctx.destination)
+
+            const start = ctx.currentTime + startAt
+            osc.start(start)
+            gain.gain.exponentialRampToValueAtTime(0.25, start + 0.02)
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + duration)
+            osc.stop(start + duration + 0.02)
+          }
+
+          beep(0, 880, 0.2)
+          beep(0.26, 880, 0.2)
+          beep(0.52, 988, 0.26)
+
+          setTimeout(() => {
+            if (ctx.state !== "closed") {
+              ctx.close().catch(() => {})
+            }
+          }, 1200)
         }
-      }, 1200)
+        playWithContext().catch(async () => {
+          if (fallbackAudioRef.current) {
+            fallbackAudioRef.current.currentTime = 0
+            await fallbackAudioRef.current.play()
+          }
+        })
+        return
+      }
+
+      if (fallbackAudioRef.current) {
+        fallbackAudioRef.current.currentTime = 0
+        fallbackAudioRef.current.play().catch(() => {})
+      }
     } catch (error) {
       console.warn("Ring sound could not be played:", error)
     }
@@ -97,7 +127,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         const nextOrders = response.data.data.orders
         const nextPendingIds = new Set(
           nextOrders
-            .filter((order) => order.orderStatus === "Pending")
+            .filter((order) => isPendingOrder(order))
             .map((order) => order.id || order.orderId),
         )
 
@@ -128,7 +158,7 @@ export default function OrdersPage({ statusKey = "all" }) {
     } finally {
       if (!silent) setIsLoading(false)
     }
-  }, [statusKey, playDefaultRing])
+  }, [statusKey, playDefaultRing, isPendingOrder])
 
   useEffect(() => {
     isFirstLoadRef.current = true

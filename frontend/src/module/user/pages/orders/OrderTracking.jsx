@@ -1,5 +1,5 @@
-import { useParams, Link, useSearchParams } from "react-router-dom"
-import { useState, useEffect } from "react"
+import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom"
+import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
 import {
@@ -207,6 +207,7 @@ const SectionItem = ({ icon: Icon, title, subtitle, onClick, showArrow = true, r
 
 export default function OrderTracking() {
   const { orderId } = useParams()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const confirmed = searchParams.get("confirmed") === "true"
   const { getOrderById } = useOrders()
@@ -224,8 +225,72 @@ export default function OrderTracking() {
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [cancellationReason, setCancellationReason] = useState("")
   const [isCancelling, setIsCancelling] = useState(false)
+  const [timerNow, setTimerNow] = useState(Date.now())
 
   const defaultAddress = getDefaultAddress()
+
+  const isAdminAccepted = useMemo(() => {
+    const status = order?.status
+    return ['confirmed', 'preparing', 'ready'].includes(status)
+  }, [order?.status])
+
+  const acceptedAtMs = useMemo(() => {
+    const timestamp =
+      order?.tracking?.confirmed?.timestamp ||
+      order?.tracking?.preparing?.timestamp ||
+      order?.updatedAt ||
+      order?.createdAt
+
+    const parsed = timestamp ? new Date(timestamp).getTime() : NaN
+    return Number.isFinite(parsed) ? parsed : null
+  }, [order?.tracking?.confirmed?.timestamp, order?.tracking?.preparing?.timestamp, order?.updatedAt, order?.createdAt])
+
+  const editWindowRemainingMs = useMemo(() => {
+    if (!isAdminAccepted || !acceptedAtMs) return 0
+    const remaining = 60000 - (timerNow - acceptedAtMs)
+    return Math.max(0, remaining)
+  }, [isAdminAccepted, acceptedAtMs, timerNow])
+
+  const isEditWindowOpen = editWindowRemainingMs > 0
+
+  const editWindowText = useMemo(() => {
+    const totalSeconds = Math.ceil(editWindowRemainingMs / 1000)
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    return `${minutes}:${String(seconds).padStart(2, '0')}`
+  }, [editWindowRemainingMs])
+
+  useEffect(() => {
+    if (!isEditWindowOpen) return
+    const interval = setInterval(() => {
+      setTimerNow(Date.now())
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [isEditWindowOpen])
+
+  const getRestaurantPath = () => {
+    const restaurantRef = order?.restaurantId
+    if (restaurantRef && typeof restaurantRef === 'object') {
+      if (restaurantRef.slug) return `/user/restaurants/${restaurantRef.slug}`
+      if (restaurantRef._id) return `/user/restaurants/${restaurantRef._id}`
+      if (restaurantRef.id) return `/user/restaurants/${restaurantRef.id}`
+    }
+    if (typeof restaurantRef === 'string' && restaurantRef.trim()) {
+      return `/user/restaurants/${restaurantRef}`
+    }
+    if (order?.restaurant && typeof order.restaurant === 'string') {
+      return `/user/restaurants/${order.restaurant.toLowerCase().trim().replace(/\s+/g, '-')}`
+    }
+    return '/user/restaurants'
+  }
+
+  const handleEditAddMore = () => {
+    if (!isEditWindowOpen) {
+      toast.error('Edit window expired for this order')
+      return
+    }
+    navigate(getRestaurantPath())
+  }
 
   // Poll for order updates (especially when delivery partner accepts)
   // Only poll if delivery partner is not yet assigned to avoid unnecessary updates
@@ -538,6 +603,11 @@ export default function OrderTracking() {
   const handleCancelOrder = () => {
     // Check if order can be cancelled (only Razorpay orders that aren't delivered/cancelled)
     if (!order) return;
+
+    if (isAdminAccepted && !isEditWindowOpen) {
+      toast.error('Cancellation window ended. You can no longer cancel this order.');
+      return;
+    }
 
     if (order.status === 'cancelled') {
       toast.error('Order is already cancelled');
@@ -870,6 +940,46 @@ export default function OrderTracking() {
 
       {/* Scrollable Content */}
       <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 space-y-4 md:space-y-6 pb-24 md:pb-32">
+        {/* 1-minute edit/cancel window after admin acceptance */}
+        {isAdminAccepted && (
+          <motion.div
+            className="bg-white rounded-xl p-4 shadow-sm border border-orange-100"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-gray-900">
+                Edit/Add items from same restaurant or cancel
+              </p>
+              <span className={`text-sm font-bold px-2 py-1 rounded-md ${isEditWindowOpen ? 'bg-orange-50 text-orange-700' : 'bg-gray-100 text-gray-500'}`}>
+                {isEditWindowOpen ? editWindowText : 'Expired'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Available for 1 minute after admin acceptance.
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleEditAddMore}
+                disabled={!isEditWindowOpen}
+              >
+                Add More / Edit
+              </Button>
+              <Button
+                type="button"
+                onClick={handleCancelOrder}
+                disabled={!isEditWindowOpen}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Cancel Order
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
         {/* Food Cooking Status - Show until delivery partner accepts pickup */}
         {(() => {
           // Check if delivery partner has accepted pickup
@@ -1066,12 +1176,21 @@ export default function OrderTracking() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
         >
-          <SectionItem
-            icon={CircleSlash}
-            title="Cancel order"
-            subtitle=""
-            onClick={handleCancelOrder}
-          />
+          {!isAdminAccepted || isEditWindowOpen ? (
+            <SectionItem
+              icon={CircleSlash}
+              title="Cancel order"
+              subtitle=""
+              onClick={handleCancelOrder}
+            />
+          ) : (
+            <SectionItem
+              icon={CircleSlash}
+              title="Cancel order"
+              subtitle="Cancellation window ended"
+              onClick={handleCancelOrder}
+            />
+          )}
         </motion.div>
 
       </div>
