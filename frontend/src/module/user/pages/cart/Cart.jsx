@@ -1288,9 +1288,6 @@ export default function Cart() {
 
                       <div className="flex-1 min-w-0">
                         <p className="text-sm md:text-base font-medium text-gray-800 dark:text-gray-200 leading-tight">{item.name}</p>
-                        <button className="text-xs md:text-sm text-blue-600 dark:text-blue-400 font-medium flex items-center gap-0.5 mt-0.5">
-                          Edit <ChevronRight className="h-3 w-3 md:h-4 md:w-4" />
-                        </button>
                       </div>
 
                       <div className="flex items-center gap-3 md:gap-4">
