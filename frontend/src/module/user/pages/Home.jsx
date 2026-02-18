@@ -1244,14 +1244,7 @@ export default function Home() {
                       )}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    aria-label="Voice Search"
-                    onClick={handleSearchFocus}
-                    className="flex-shrink-0 mr-2 sm:mr-3 lg:mr-4 p-1 lg:p-1.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors"
-                  >
-                    <Mic className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-gray-500 dark:text-gray-400" strokeWidth={2.5} />
-                  </button>
+
                 </div>
               </div>
             </motion.div>
