@@ -984,7 +984,7 @@ export default function PageNavbar({
               title="Wallet"
             >
               <div className={`h-full w-full rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center`}>
-                <Wallet className={`h-4 w-4 sm:h-5 sm:w-5 ${textColor === "white" ? "text-black" : "text-gray-900"}`} strokeWidth={2} />
+                <Wallet className={`h-4 w-4 sm:h-5 sm:w-5 ${textColor === "white" ? "text-black dark:text-white" : "text-gray-900 dark:text-white"}`} strokeWidth={2} />
               </div>
             </Button>
           </Link>
@@ -997,7 +997,7 @@ export default function PageNavbar({
               title="Cart"
             >
               <div className={`h-full w-full rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center`}>
-                <ShoppingCart className={`h-4 w-4 sm:h-5 sm:w-5 ${textColor === "white" ? "text-black" : "text-gray-900"}`} strokeWidth={2} />
+                <ShoppingCart className={`h-4 w-4 sm:h-5 sm:w-5 ${textColor === "white" ? "text-black dark:text-white" : "text-gray-900 dark:text-white"}`} strokeWidth={2} />
               </div>
               {cartCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center ring-2 ring-white">

@@ -64,7 +64,7 @@ export default function Navbar() {
       }
     }
     window.addEventListener('businessSettingsUpdated', handleSettingsUpdate)
-    
+
     return () => {
       window.removeEventListener('businessSettingsUpdated', handleSettingsUpdate)
     }
@@ -95,7 +95,7 @@ export default function Navbar() {
               onClick={handleLocationClick}
               disabled={loading}
             >
-              {loading ? ( 
+              {loading ? (
                 <span className="text-xs sm:text-sm font-semibold text-left text-black">
                   Loading...
                 </span>
@@ -140,12 +140,12 @@ export default function Navbar() {
             <Button
               variant="ghost"
 
-              
+
               size="icon"
               className="relative h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 hover:bg-gray-100"
               title={`${userPoints} Points`}
             >
-              <Trophy className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-primary-orange" />
+              <Trophy className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-primary-orange dark:text-orange-400" />
               <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-primary-orange text-white text-[10px] sm:text-xs flex items-center justify-center font-semibold">
                 {userPoints > 999 ? "999+" : userPoints}
               </span>
@@ -154,7 +154,7 @@ export default function Navbar() {
             {/* Cart */}
             <Link to="/user/cart">
               <Button variant="ghost" size="icon" className="relative h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 hover:bg-gray-100">
-                <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+                <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 dark:text-gray-300" />
                 {cartCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-primary-orange text-white text-[10px] sm:text-xs flex items-center justify-center font-semibold">
                     {cartCount > 99 ? "99+" : cartCount}
