@@ -2340,32 +2340,47 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
               </div>
             </div>
 
-            {/* Hidden required fields for form validation */}
-            <div className="hidden">
+            {/* Manual address fields (auto-filled from Google Maps, editable by user) */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 block">
+                Address (Manual or Auto-fill)
+              </Label>
               <Input
                 name="street"
+                placeholder="Street / Area *"
                 value={addressFormData.street}
                 onChange={handleAddressFormChange}
+                className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700"
                 required
               />
-              <Input
-                name="city"
-                value={addressFormData.city}
-                onChange={handleAddressFormChange}
-                required
-              />
-              <Input
-                name="state"
-                value={addressFormData.state}
-                onChange={handleAddressFormChange}
-                required
-              />
-              {/* zipCode is optional, not required */}
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  name="city"
+                  placeholder="City *"
+                  value={addressFormData.city}
+                  onChange={handleAddressFormChange}
+                  className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700"
+                  required
+                />
+                <Input
+                  name="state"
+                  placeholder="State *"
+                  value={addressFormData.state}
+                  onChange={handleAddressFormChange}
+                  className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700"
+                  required
+                />
+              </div>
               <Input
                 name="zipCode"
+                placeholder="Pincode (optional)"
                 value={addressFormData.zipCode || ""}
                 onChange={handleAddressFormChange}
+                className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700"
               />
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Tip: Use map/current location for auto-detection, or type details manually.
+              </p>
             </div>
           </div>
         </div>
