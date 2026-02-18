@@ -1321,6 +1321,18 @@ export const adminAPI = {
     return apiClient.get(API_ENDPOINTS.ADMIN.ORDERS, { params });
   },
 
+  // Accept order (admin)
+  acceptOrder: (id) => {
+    return apiClient.patch(`/admin/orders/${encodeURIComponent(id)}/accept`);
+  },
+
+  // Reject order (admin)
+  rejectOrder: (id, reason = "") => {
+    return apiClient.patch(`/admin/orders/${encodeURIComponent(id)}/reject`, {
+      reason,
+    });
+  },
+
   // Get orders searching for deliveryman
   getSearchingDeliverymanOrders: (params = {}) => {
     return apiClient.get(API_ENDPOINTS.ADMIN.ORDERS_SEARCHING_DELIVERYMAN, {

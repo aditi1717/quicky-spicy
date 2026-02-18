@@ -175,6 +175,7 @@ const DeliveryMap = ({ orderId, order, isVisible }) => {
     >
       <DeliveryTrackingMap
         orderId={orderId}
+        orderTrackingIds={[order?.mongoId, order?._id, order?.orderId, order?.id]}
         restaurantCoords={restaurantCoords}
         customerCoords={customerCoords}
         userLiveCoords={userLiveCoords}
@@ -294,6 +295,9 @@ export default function OrderTracking() {
 
             const transformedOrder = {
               ...apiOrder,
+              mongoId: apiOrder?._id || null,
+              orderId: apiOrder?.orderId || apiOrder?._id || null,
+              id: apiOrder?.orderId || apiOrder?._id || null,
               restaurantLocation: restaurantCoords ? {
                 coordinates: restaurantCoords
               } : order.restaurantLocation,
@@ -319,6 +323,11 @@ export default function OrderTracking() {
       // First try to get from context (localStorage)
       const contextOrder = getOrderById(orderId)
       if (contextOrder) {
+        contextOrder.mongoId = contextOrder.mongoId ||
+          contextOrder._id ||
+          (typeof contextOrder.id === 'string' && /^[a-f0-9]{24}$/i.test(contextOrder.id) ? contextOrder.id : null);
+        contextOrder.orderId = contextOrder.orderId ||
+          (typeof contextOrder.id === 'string' && contextOrder.id.startsWith('ORD-') ? contextOrder.id : null);
         // Ensure restaurant location is available in context order
         if (!contextOrder.restaurantLocation?.coordinates && contextOrder.restaurantId?.location?.coordinates) {
           contextOrder.restaurantLocation = {
@@ -400,6 +409,8 @@ export default function OrderTracking() {
           // Transform API order to match component structure
           const transformedOrder = {
             id: apiOrder.orderId || apiOrder._id,
+            mongoId: apiOrder._id || null,
+            orderId: apiOrder.orderId || apiOrder._id,
             restaurant: apiOrder.restaurantName || 'Restaurant',
             restaurantId: apiOrder.restaurantId || null, // Include restaurantId for location access
             userId: apiOrder.userId || null, // Include user data for phone number
@@ -626,6 +637,8 @@ export default function OrderTracking() {
 
         const transformedOrder = {
           id: apiOrder.orderId || apiOrder._id,
+          mongoId: apiOrder._id || null,
+          orderId: apiOrder.orderId || apiOrder._id,
           restaurant: apiOrder.restaurantName || 'Restaurant',
           restaurantId: apiOrder.restaurantId || null, // Include restaurantId for location access
           userId: apiOrder.userId || null, // Include user data for phone number

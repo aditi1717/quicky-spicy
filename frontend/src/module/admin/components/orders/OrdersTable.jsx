@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { Eye, Printer, ArrowUpDown, Loader2 } from "lucide-react"
+import { Eye, Printer, ArrowUpDown, Loader2, Check, X } from "lucide-react"
 
 const getStatusColor = (orderStatus) => {
   const colors = {
@@ -26,7 +26,16 @@ const getPaymentStatusColor = (paymentStatus) => {
   return "text-slate-600"
 }
 
-export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPrintOrder, onRefund }) {
+export default function OrdersTable({
+  orders,
+  visibleColumns,
+  onViewOrder,
+  onPrintOrder,
+  onRefund,
+  onAcceptOrder,
+  onRejectOrder,
+  actionLoadingOrderId,
+}) {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
   const totalPages = Math.ceil(orders.length / itemsPerPage)
@@ -301,6 +310,36 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
                 {visibleColumns.actions && (
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <div className="flex items-center justify-center gap-2">
+                      {order.orderStatus === "Pending" && onAcceptOrder && (
+                        <button
+                          onClick={() => onAcceptOrder(order)}
+                          disabled={actionLoadingOrderId === (order.id || order.orderId)}
+                          className="px-2.5 py-1.5 rounded text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                          title="Accept Order"
+                        >
+                          {actionLoadingOrderId === (order.id || order.orderId) ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Check className="w-3.5 h-3.5" />
+                          )}
+                          <span>Accept</span>
+                        </button>
+                      )}
+                      {order.orderStatus === "Pending" && onRejectOrder && (
+                        <button
+                          onClick={() => onRejectOrder(order)}
+                          disabled={actionLoadingOrderId === (order.id || order.orderId)}
+                          className="px-2.5 py-1.5 rounded text-xs font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                          title="Reject Order"
+                        >
+                          {actionLoadingOrderId === (order.id || order.orderId) ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <X className="w-3.5 h-3.5" />
+                          )}
+                          <span>Reject</span>
+                        </button>
+                      )}
                       <button 
                         onClick={() => onViewOrder(order)}
                         className="p-1.5 rounded text-orange-600 hover:bg-orange-50 transition-colors"

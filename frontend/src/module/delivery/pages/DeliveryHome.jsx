@@ -4502,7 +4502,8 @@ export default function DeliveryHome() {
       const response = await deliveryAPI.getOrders({
         limit: 50, // Get up to 50 pending orders
         page: 1,
-        includeDelivered: false // Only get active orders
+        includeDelivered: false, // Only get active orders
+        discover: true // Include unassigned preparing/ready orders for pickup discovery
       })
 
       if (response?.data?.success && response?.data?.data?.orders) {

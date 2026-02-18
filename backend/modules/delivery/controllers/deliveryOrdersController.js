@@ -31,10 +31,19 @@ const logger = winston.createLogger({
 export const getOrders = asyncHandler(async (req, res) => {
   try {
     const delivery = req.delivery;
-    const { status, page = 1, limit = 20, includeDelivered } = req.query;
+    const { status, page = 1, limit = 20, includeDelivered, discover } = req.query;
 
     // Build query
-    const query = { deliveryPartnerId: delivery._id };
+    const isDiscoverMode = discover === 'true' || discover === true;
+    const query = isDiscoverMode
+      ? {
+          $or: [
+            { deliveryPartnerId: delivery._id },
+            { deliveryPartnerId: null, status: { $in: ['preparing', 'ready'] } },
+            { deliveryPartnerId: { $exists: false }, status: { $in: ['preparing', 'ready'] } },
+          ],
+        }
+      : { deliveryPartnerId: delivery._id };
 
     if (status) {
       query.status = status;

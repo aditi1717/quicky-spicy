@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { FileText, Calendar, Package } from "lucide-react"
 import { adminAPI } from "@/lib/api"
 import { toast } from "sonner"
@@ -31,45 +31,175 @@ export default function OrdersPage({ statusKey = "all" }) {
   const config = statusConfig[statusKey] || statusConfig["all"]
   const [orders, setOrders] = useState([])
   const [isLoading, setIsLoading] = useState(true)
-  const [totalCount, setTotalCount] = useState(0)
   const [processingRefund, setProcessingRefund] = useState(null)
+  const [processingActionOrderId, setProcessingActionOrderId] = useState(null)
   const [refundModalOpen, setRefundModalOpen] = useState(false)
   const [selectedOrderForRefund, setSelectedOrderForRefund] = useState(null)
-  
-  // Fetch orders from backend API
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setIsLoading(true)
-        const params = {
-          page: 1,
-          limit: 1000, // Fetch all orders for now (can be optimized with pagination later)
-          status: statusKey === "all" ? undefined : 
-                 statusKey === "restaurant-cancelled" ? "cancelled" : statusKey,
-          cancelledBy: statusKey === "restaurant-cancelled" ? "restaurant" : undefined
-        }
-        
-        const response = await adminAPI.getOrders(params)
-        
-        if (response.data?.success && response.data?.data?.orders) {
-          setOrders(response.data.data.orders)
-          setTotalCount(response.data.data.pagination?.total || response.data.data.orders.length)
-        } else {
-          console.error("Failed to fetch orders:", response.data)
-          toast.error("Failed to fetch orders")
-          setOrders([])
-        }
-      } catch (error) {
-        console.error("Error fetching orders:", error)
-        toast.error(error.response?.data?.message || "Failed to fetch orders")
-        setOrders([])
-      } finally {
-        setIsLoading(false)
+  const seenPendingOrderIdsRef = useRef(new Set())
+  const isFirstLoadRef = useRef(true)
+
+  const playDefaultRing = useCallback(() => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext
+      if (!AudioCtx) return
+
+      const ctx = new AudioCtx()
+      const beep = (startAt, frequency = 880, duration = 0.2) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = "sine"
+        osc.frequency.value = frequency
+        gain.gain.value = 0.0001
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+
+        const start = ctx.currentTime + startAt
+        osc.start(start)
+        gain.gain.exponentialRampToValueAtTime(0.25, start + 0.02)
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration)
+        osc.stop(start + duration + 0.02)
       }
+
+      beep(0, 880, 0.2)
+      beep(0.26, 880, 0.2)
+      beep(0.52, 988, 0.26)
+
+      setTimeout(() => {
+        if (ctx.state !== "closed") {
+          ctx.close().catch(() => {})
+        }
+      }, 1200)
+    } catch (error) {
+      console.warn("Ring sound could not be played:", error)
+    }
+  }, [])
+
+  const fetchOrders = useCallback(async (options = {}) => {
+    const { silent = false, withRingCheck = false } = options
+
+    try {
+      if (!silent) setIsLoading(true)
+      const params = {
+        page: 1,
+        limit: 1000,
+        status:
+          statusKey === "all"
+            ? undefined
+            : statusKey === "restaurant-cancelled"
+              ? "cancelled"
+              : statusKey,
+        cancelledBy: statusKey === "restaurant-cancelled" ? "restaurant" : undefined,
+      }
+
+      const response = await adminAPI.getOrders(params)
+
+      if (response.data?.success && response.data?.data?.orders) {
+        const nextOrders = response.data.data.orders
+        const nextPendingIds = new Set(
+          nextOrders
+            .filter((order) => order.orderStatus === "Pending")
+            .map((order) => order.id || order.orderId),
+        )
+
+        if (withRingCheck && !isFirstLoadRef.current) {
+          const hasNewPendingOrder = [...nextPendingIds].some(
+            (id) => !seenPendingOrderIdsRef.current.has(id),
+          )
+          if (hasNewPendingOrder) {
+            playDefaultRing()
+            toast.info("New pending order received")
+          }
+        }
+
+        seenPendingOrderIdsRef.current = nextPendingIds
+        isFirstLoadRef.current = false
+        setOrders(nextOrders)
+      } else {
+        console.error("Failed to fetch orders:", response.data)
+        if (!silent) toast.error("Failed to fetch orders")
+        setOrders([])
+      }
+    } catch (error) {
+      console.error("Error fetching orders:", error)
+      if (!silent) {
+        toast.error(error.response?.data?.message || "Failed to fetch orders")
+      }
+      setOrders([])
+    } finally {
+      if (!silent) setIsLoading(false)
+    }
+  }, [statusKey, playDefaultRing])
+
+  useEffect(() => {
+    isFirstLoadRef.current = true
+    seenPendingOrderIdsRef.current = new Set()
+    fetchOrders({ silent: false, withRingCheck: false })
+  }, [fetchOrders])
+
+  useEffect(() => {
+    if (statusKey !== "all") return undefined
+
+    const pollId = setInterval(() => {
+      fetchOrders({ silent: true, withRingCheck: true })
+    }, 15000)
+
+    return () => clearInterval(pollId)
+  }, [statusKey, fetchOrders])
+
+  const handleAcceptOrder = async (order) => {
+    const orderIdToUse = order.id || order._id || order.orderId
+    if (!orderIdToUse) {
+      toast.error("Order ID not found")
+      return
     }
 
-    fetchOrders()
-  }, [statusKey])
+    try {
+      setProcessingActionOrderId(order.id || order.orderId)
+      const response = await adminAPI.acceptOrder(orderIdToUse)
+      if (response.data?.success) {
+        toast.success(response.data?.message || `Order ${order.orderId} accepted`)
+        await fetchOrders({ silent: true, withRingCheck: false })
+      } else {
+        toast.error(response.data?.message || "Failed to accept order")
+      }
+    } catch (error) {
+      console.error("Error accepting order:", error)
+      toast.error(error.response?.data?.message || "Failed to accept order")
+    } finally {
+      setProcessingActionOrderId(null)
+    }
+  }
+
+  const handleRejectOrder = async (order) => {
+    const orderIdToUse = order.id || order._id || order.orderId
+    if (!orderIdToUse) {
+      toast.error("Order ID not found")
+      return
+    }
+
+    const reason = prompt(
+      `Enter rejection reason for order ${order.orderId}:`,
+      "Order rejected by admin",
+    )
+
+    if (reason === null) return
+
+    try {
+      setProcessingActionOrderId(order.id || order.orderId)
+      const response = await adminAPI.rejectOrder(orderIdToUse, reason)
+      if (response.data?.success) {
+        toast.success(response.data?.message || `Order ${order.orderId} rejected`)
+        await fetchOrders({ silent: true, withRingCheck: false })
+      } else {
+        toast.error(response.data?.message || "Failed to reject order")
+      }
+    } catch (error) {
+      console.error("Error rejecting order:", error)
+      toast.error(error.response?.data?.message || "Failed to reject order")
+    } finally {
+      setProcessingActionOrderId(null)
+    }
+  }
 
   // Handle refund button click - show modal for wallet payments, confirm dialog for others
   const handleRefund = (order) => {
@@ -143,18 +273,7 @@ export default function OrdersPage({ statusKey = "all" }) {
           )
         )
         // Refresh the orders list to get updated data
-        const params = {
-          page: 1,
-          limit: 1000,
-          status: statusKey === "all" ? undefined : 
-                 statusKey === "restaurant-cancelled" ? "cancelled" : statusKey,
-          cancelledBy: statusKey === "restaurant-cancelled" ? "restaurant" : undefined
-        }
-        const refreshResponse = await adminAPI.getOrders(params)
-        if (refreshResponse.data?.success && refreshResponse.data?.data?.orders) {
-          setOrders(refreshResponse.data.data.orders)
-          setTotalCount(refreshResponse.data.data.pagination?.total || refreshResponse.data.data.orders.length)
-        }
+        await fetchOrders({ silent: true, withRingCheck: false })
       } else {
         toast.error(response.data?.message || "Failed to process refund")
       }
@@ -221,6 +340,17 @@ export default function OrdersPage({ statusKey = "all" }) {
     }
   }
 
+  const normalizedOrders = useMemo(() => {
+    if (statusKey !== "all") return orders
+
+    return orders.map((order) => {
+      if (order.status === "confirmed" && order.orderStatus === "Accepted") {
+        return { ...order, orderStatus: "Pending" }
+      }
+      return order
+    })
+  }, [orders, statusKey])
+
   const {
     searchQuery,
     setSearchQuery,
@@ -245,7 +375,7 @@ export default function OrdersPage({ statusKey = "all" }) {
     handlePrintOrder,
     toggleColumn,
     resetColumns,
-  } = useOrdersManagement(orders, statusKey, config.title)
+  } = useOrdersManagement(normalizedOrders, statusKey, config.title)
 
   if (isLoading) {
     return (
@@ -304,6 +434,9 @@ export default function OrdersPage({ statusKey = "all" }) {
         onViewOrder={handleViewOrder}
         onPrintOrder={handlePrintOrder}
         onRefund={handleRefund}
+        onAcceptOrder={statusKey === "all" || statusKey === "pending" ? handleAcceptOrder : undefined}
+        onRejectOrder={statusKey === "all" || statusKey === "pending" ? handleRejectOrder : undefined}
+        actionLoadingOrderId={processingActionOrderId}
       />
     </div>
   )
