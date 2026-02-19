@@ -39,6 +39,8 @@ export default function OrdersPage({ statusKey = "all" }) {
   const seenPendingOrderIdsRef = useRef(new Set())
   const isFirstLoadRef = useRef(true)
   const fallbackAudioRef = useRef(null)
+  const audioContextRef = useRef(null)
+  const audioUnlockedRef = useRef(false)
 
   const isPendingOrder = useCallback((order) => {
     const orderStatus = String(order?.orderStatus || "").toLowerCase()
@@ -50,11 +52,16 @@ export default function OrdersPage({ statusKey = "all" }) {
     try {
       if (!fallbackAudioRef.current) {
         fallbackAudioRef.current = new Audio(alertSound)
+        fallbackAudioRef.current.preload = "auto"
+        fallbackAudioRef.current.volume = 1
       }
 
       const AudioCtx = window.AudioContext || window.webkitAudioContext
       if (AudioCtx) {
-        const ctx = new AudioCtx()
+        if (!audioContextRef.current) {
+          audioContextRef.current = new AudioCtx()
+        }
+        const ctx = audioContextRef.current
         const playWithContext = async () => {
           if (ctx.state === "suspended") {
             await ctx.resume()
@@ -81,8 +88,8 @@ export default function OrdersPage({ statusKey = "all" }) {
           beep(0.52, 988, 0.26)
 
           setTimeout(() => {
-            if (ctx.state !== "closed") {
-              ctx.close().catch(() => {})
+            if (ctx.state === "running") {
+              ctx.suspend().catch(() => {})
             }
           }, 1200)
         }
@@ -101,6 +108,62 @@ export default function OrdersPage({ statusKey = "all" }) {
       }
     } catch (error) {
       console.warn("Ring sound could not be played:", error)
+    }
+  }, [])
+
+  // Unlock audio on first user gesture so rings can play reliably later
+  useEffect(() => {
+    const unlockAudio = async () => {
+      if (audioUnlockedRef.current) return
+
+      try {
+        if (!fallbackAudioRef.current) {
+          fallbackAudioRef.current = new Audio(alertSound)
+          fallbackAudioRef.current.preload = "auto"
+          fallbackAudioRef.current.volume = 1
+        }
+
+        // Prime media element playback permission
+        fallbackAudioRef.current.muted = true
+        await fallbackAudioRef.current.play()
+        fallbackAudioRef.current.pause()
+        fallbackAudioRef.current.currentTime = 0
+        fallbackAudioRef.current.muted = false
+
+        // Prime WebAudio permission
+        const AudioCtx = window.AudioContext || window.webkitAudioContext
+        if (AudioCtx && !audioContextRef.current) {
+          audioContextRef.current = new AudioCtx()
+        }
+        if (audioContextRef.current?.state === "suspended") {
+          await audioContextRef.current.resume()
+        }
+        if (audioContextRef.current?.state === "running") {
+          await audioContextRef.current.suspend()
+        }
+
+        audioUnlockedRef.current = true
+      } catch {
+        // Ignore unlock errors; we'll retry on next gesture implicitly
+      }
+    }
+
+    window.addEventListener("pointerdown", unlockAudio, { passive: true })
+    window.addEventListener("keydown", unlockAudio)
+    window.addEventListener("touchstart", unlockAudio, { passive: true })
+
+    return () => {
+      window.removeEventListener("pointerdown", unlockAudio)
+      window.removeEventListener("keydown", unlockAudio)
+      window.removeEventListener("touchstart", unlockAudio)
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        audioContextRef.current.close().catch(() => {})
+      }
     }
   }, [])
 
@@ -128,7 +191,8 @@ export default function OrdersPage({ statusKey = "all" }) {
         const nextPendingIds = new Set(
           nextOrders
             .filter((order) => isPendingOrder(order))
-            .map((order) => order.id || order.orderId),
+            .map((order) => order.id || order._id || order.orderId)
+            .filter(Boolean),
         )
 
         if (withRingCheck && !isFirstLoadRef.current) {
