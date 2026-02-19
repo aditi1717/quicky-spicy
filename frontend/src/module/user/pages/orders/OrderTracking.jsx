@@ -268,30 +268,6 @@ export default function OrderTracking() {
     return () => clearInterval(interval)
   }, [isEditWindowOpen])
 
-  const getRestaurantPath = () => {
-    const restaurantRef = order?.restaurantId
-    if (restaurantRef && typeof restaurantRef === 'object') {
-      if (restaurantRef.slug) return `/user/restaurants/${restaurantRef.slug}`
-      if (restaurantRef._id) return `/user/restaurants/${restaurantRef._id}`
-      if (restaurantRef.id) return `/user/restaurants/${restaurantRef.id}`
-    }
-    if (typeof restaurantRef === 'string' && restaurantRef.trim()) {
-      return `/user/restaurants/${restaurantRef}`
-    }
-    if (order?.restaurant && typeof order.restaurant === 'string') {
-      return `/user/restaurants/${order.restaurant.toLowerCase().trim().replace(/\s+/g, '-')}`
-    }
-    return '/user/restaurants'
-  }
-
-  const handleEditAddMore = () => {
-    if (!isEditWindowOpen) {
-      toast.error('Edit window expired for this order')
-      return
-    }
-    navigate(getRestaurantPath())
-  }
-
   // Poll for order updates (especially when delivery partner accepts)
   // Only poll if delivery partner is not yet assigned to avoid unnecessary updates
   useEffect(() => {
@@ -940,7 +916,7 @@ export default function OrderTracking() {
 
       {/* Scrollable Content */}
       <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 space-y-4 md:space-y-6 pb-24 md:pb-32">
-        {/* 1-minute edit/cancel window after admin acceptance */}
+        {/* 1-minute cancellation window after admin acceptance */}
         {isAdminAccepted && (
           <motion.div
             className="bg-white rounded-xl p-4 shadow-sm border border-orange-100"
@@ -950,7 +926,7 @@ export default function OrderTracking() {
           >
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold text-gray-900">
-                Edit/Add items from same restaurant or cancel
+                Cancel order
               </p>
               <span className={`text-sm font-bold px-2 py-1 rounded-md ${isEditWindowOpen ? 'bg-orange-50 text-orange-700' : 'bg-gray-100 text-gray-500'}`}>
                 {isEditWindowOpen ? editWindowText : 'Expired'}
@@ -959,20 +935,12 @@ export default function OrderTracking() {
             <p className="text-xs text-gray-500 mt-1">
               Available for 1 minute after admin acceptance.
             </p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleEditAddMore}
-                disabled={!isEditWindowOpen}
-              >
-                Add More / Edit
-              </Button>
+            <div className="mt-3">
               <Button
                 type="button"
                 onClick={handleCancelOrder}
                 disabled={!isEditWindowOpen}
-                className="bg-red-600 hover:bg-red-700 text-white"
+                className="w-full bg-red-600 hover:bg-red-700 text-white"
               >
                 Cancel Order
               </Button>
