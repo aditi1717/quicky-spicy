@@ -138,9 +138,12 @@ export default function UserLayout() {
             <SearchOverlayProvider>
               <LocationSelectorProvider>
                 {/* <Navbar /> */}
-                {showBottomNav && <DesktopNavbar />}
+                {/* Desktop Navbar - Hidden on mobile, visible on medium+ screens */}
+                <div className="hidden md:block">
+                  {showBottomNav && <DesktopNavbar />}
+                </div>
                 <LocationPrompt />
-                <main>
+                <main className={showBottomNav ? "md:pt-40" : ""}>
                   <Outlet />
                 </main>
                 {showBottomNav && <BottomNavigation />}

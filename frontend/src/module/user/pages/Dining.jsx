@@ -13,7 +13,7 @@ import { diningAPI } from "@/lib/api"
 import api from "@/lib/api"
 import PageNavbar from "../components/PageNavbar"
 import OptimizedImage from "@/components/OptimizedImage"
-import appzetoFoodLogo from "@/assets/appzetologo.png"
+import quickSpicyLogo from "@/assets/quicky-spicy-logo.png"
 // Using placeholders for dining card images
 const diningCard1 = "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop"
 const diningCard2 = "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop"
@@ -208,57 +208,60 @@ export default function Dining() {
 
   return (
     <AnimatedPage className="bg-white dark:bg-[#0a0a0a]" style={{ minHeight: '100vh', paddingBottom: '80px', overflow: 'visible' }}>
-      {/* Navbar Section */}
-      <div className="relative z-20 pt-2 sm:pt-3 lg:pt-4 bg-white dark:bg-[#0a0a0a]">
-        <PageNavbar
-          textColor="dark"
-          zIndex={20}
-          onNavClick={(e) => e.stopPropagation()}
-        />
-      </div>
+      {/* Sticky Header Wrapper */}
+      <div className="sticky top-0 z-40 w-full bg-white dark:bg-[#0a0a0a] shadow-sm md:hidden">
+        {/* Navbar Section */}
+        <div className="relative z-20 pt-2 sm:pt-3 lg:pt-4">
+          <PageNavbar
+            textColor="dark"
+            zIndex={20}
+            onNavClick={(e) => e.stopPropagation()}
+          />
+        </div>
 
-      {/* Search Bar Section */}
-      <section
-        className="relative z-20 w-full py-3 sm:py-4 md:py-5 bg-white dark:bg-[#0a0a0a]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="relative z-20 w-full px-3 sm:px-6 lg:px-8">
-          {/* Search Bar Container */}
-          <div className="z-20">
-            {/* Enhanced Search Bar */}
-            <div className="w-full relative">
-              <div className="relative bg-white dark:bg-[#1a1a1a] rounded-xl shadow-lg border border-gray-200 dark:border-gray-800 p-1 sm:p-1.5 transition-all duration-300 hover:shadow-xl">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <Search className="h-4 w-4 sm:h-4 sm:w-4 text-[#EB590E] flex-shrink-0 ml-2 sm:ml-3" strokeWidth={2.5} />
-                  <div className="flex-1 relative">
-                    <Input
-                      value={heroSearch}
-                      onChange={(e) => setHeroSearch(e.target.value)}
-                      onFocus={handleSearchFocus}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && heroSearch.trim()) {
-                          navigate(`/user/search?q=${encodeURIComponent(heroSearch.trim())}`)
-                          closeSearch()
-                          setHeroSearch("")
-                        }
-                      }}
-                      className="pl-0 pr-2 h-8 sm:h-9 w-full bg-transparent border-0 text-sm sm:text-base font-semibold text-gray-700 dark:text-white focus-visible:ring-0 focus-visible:ring-offset-0 rounded-full placeholder:font-semibold placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                      placeholder='Search "burger"'
-                    />
+        {/* Search Bar Section */}
+        <section
+          className="relative z-20 w-full py-3 sm:py-4 md:py-5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="relative z-20 w-full px-3 sm:px-6 lg:px-8">
+            {/* Search Bar Container */}
+            <div className="z-20">
+              {/* Enhanced Search Bar */}
+              <div className="w-full relative">
+                <div className="relative bg-white dark:bg-[#1a1a1a] rounded-xl shadow-lg border border-gray-200 dark:border-gray-800 p-1 sm:p-1.5 transition-all duration-300 hover:shadow-xl">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Search className="h-4 w-4 sm:h-4 sm:w-4 text-[#EB590E] flex-shrink-0 ml-2 sm:ml-3" strokeWidth={2.5} />
+                    <div className="flex-1 relative">
+                      <Input
+                        value={heroSearch}
+                        onChange={(e) => setHeroSearch(e.target.value)}
+                        onFocus={handleSearchFocus}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && heroSearch.trim()) {
+                            navigate(`/user/search?q=${encodeURIComponent(heroSearch.trim())}`)
+                            closeSearch()
+                            setHeroSearch("")
+                          }
+                        }}
+                        className="pl-0 pr-2 h-8 sm:h-9 w-full bg-transparent border-0 text-sm sm:text-base font-semibold text-gray-700 dark:text-white focus-visible:ring-0 focus-visible:ring-offset-0 rounded-full placeholder:font-semibold placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                        placeholder='Search "burger"'
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSearchFocus}
+                      className="flex-shrink-0 mr-2 sm:mr-3 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                    >
+                      <Mic className="h-4 w-4 sm:h-4 sm:w-4 text-gray-500 dark:text-gray-400" strokeWidth={2.5} />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleSearchFocus}
-                    className="flex-shrink-0 mr-2 sm:mr-3 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                  >
-                    <Mic className="h-4 w-4 sm:h-4 sm:w-4 text-gray-500 dark:text-gray-400" strokeWidth={2.5} />
-                  </button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       {/* Banner Section */}
       <div

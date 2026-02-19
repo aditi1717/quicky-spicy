@@ -7,7 +7,7 @@ import { useCart } from "../context/CartContext"
 import { useLocationSelector } from "./UserLayout"
 import { FaLocationDot } from "react-icons/fa6"
 import { getCachedSettings, loadBusinessSettings } from "@/lib/utils/businessSettings"
-import appzetoFoodLogo from "@/assets/appzetologo.png"
+import quickSpicyLogo from "@/assets/quicky-spicy-logo.png"
 
 export default function PageNavbar({
   textColor = "white",
@@ -932,12 +932,12 @@ export default function PageNavbar({
               className="h-10 w-auto sm:h-12 md:h-14 object-contain scale-[1.8] sm:scale-[2] origin-left"
               crossOrigin="anonymous"
               onError={(e) => {
-                e.target.src = appzetoFoodLogo
+                e.target.src = quickSpicyLogo
               }}
             />
           ) : (
             <img
-              src={appzetoFoodLogo}
+              src={quickSpicyLogo}
               alt={`${companyName} Logo`}
               className="h-10 w-auto sm:h-12 md:h-14 object-contain scale-[1.8] sm:scale-[2] origin-left"
             />

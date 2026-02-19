@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useLocation } from "../hooks/useLocation"
 import { useZone } from "../hooks/useZone"
-import appzetoFoodLogo from "@/assets/appzetologo.png"
+import quickSpicyLogo from "@/assets/quicky-spicy-logo.png"
 import offerImage from "@/assets/offerimage.png"
 import api, { restaurantAPI } from "@/lib/api"
 import { API_BASE_URL } from "@/lib/api/config"
@@ -1180,11 +1180,11 @@ export default function Home() {
       </div>
 
       {/* Unified Navbar & Header Section */}
-      <div className="relative w-full bg-white dark:bg-[#0a0a0a] z-40">
+      <div className="sticky top-0 w-full bg-white dark:bg-[#0a0a0a] z-40 shadow-sm">
 
         {/* Navbar */}
         <motion.div
-          className="relative z-50 pt-2 sm:pt-3 lg:pt-4"
+          className="relative z-50 pt-2 sm:pt-3 lg:pt-4 md:hidden"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
@@ -1194,7 +1194,7 @@ export default function Home() {
 
         {/* Search Bar and VEG MODE Container - Sticky */}
         <motion.div
-          className="sticky top-0 z-40 w-full bg-white dark:bg-[#0a0a0a] py-3 sm:py-4 shadow-sm"
+          className="w-full bg-white dark:bg-[#0a0a0a] py-3 sm:py-4 md:hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
@@ -1215,6 +1215,7 @@ export default function Home() {
                         value={heroSearch}
                         onChange={(e) => setHeroSearch(e.target.value)}
                         onFocus={handleSearchFocus}
+                        onClick={handleSearchFocus}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && heroSearch.trim()) {
                             navigate(`/user/search?q=${encodeURIComponent(heroSearch.trim())}`)

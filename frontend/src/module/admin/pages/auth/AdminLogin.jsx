@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff } from "lucide-react"
-import appzetoLogo from "@/assets/appzetologo.png"
+import quickSpicyLogo from "@/assets/quicky-spicy-logo.png"
 
 export default function AdminLogin() {
   const navigate = useNavigate()
@@ -24,7 +24,7 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-  const [logoUrl, setLogoUrl] = useState(appzetoLogo)
+  const [logoUrl, setLogoUrl] = useState(quickSpicyLogo)
 
   // Redirect to admin dashboard if already authenticated
   useEffect(() => {
@@ -66,11 +66,11 @@ export default function AdminLogin() {
       // Use admin-specific login endpoint
       const response = await adminAPI.login(email, password)
       const data = response?.data?.data || response?.data
-      
+
       if (data.accessToken && data.admin) {
         // Store admin token and data
         setAuthData("admin", data.accessToken, data.admin)
-        
+
         // Navigate to admin dashboard after successful login
         navigate("/admin", { replace: true })
       } else {
@@ -107,8 +107,8 @@ export default function AdminLogin() {
                   loading="lazy"
                   onError={(e) => {
                     // Fallback to default logo if business logo fails to load
-                    if (e.target.src !== appzetoLogo) {
-                      e.target.src = appzetoLogo
+                    if (e.target.src !== quickSpicyLogo) {
+                      e.target.src = quickSpicyLogo
                     }
                   }}
                 />
