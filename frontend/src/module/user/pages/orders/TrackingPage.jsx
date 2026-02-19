@@ -173,7 +173,6 @@ const TrackingPage = () => {
                 <p className="font-semibold text-white">Ajay Panchal</p>
                 <p className="text-sm text-gray-400">+91 7610416911</p>
               </div>
-              <span className="text-green-400 font-medium text-sm cursor-pointer">Edit</span>
             </div>
           </div>
 
@@ -185,7 +184,6 @@ const TrackingPage = () => {
                 <p className="font-semibold text-white">Delivery at Location</p>
                 <p className="text-sm text-gray-400">X2RJ+QHR, Dewas, Madhya Pradesh 45...</p>
               </div>
-              <span className="text-green-400 font-medium text-sm cursor-pointer">Edit</span>
             </div>
           </div>
         </div>

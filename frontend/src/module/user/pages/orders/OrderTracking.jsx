@@ -1035,9 +1035,6 @@ export default function OrderTracking() {
               defaultAddress?.phone ||
               'Phone number not available'
             }
-            rightContent={
-              <span className="text-[#EB590E] font-medium text-sm">Edit</span>
-            }
           />
           <SectionItem
             icon={HomeIcon}
@@ -1081,9 +1078,6 @@ export default function OrderTracking() {
 
               return 'Add delivery address'
             })()}
-            rightContent={
-              <span className="text-[#EB590E] font-medium text-sm">Edit</span>
-            }
           />
           <SectionItem
             icon={MessageSquare}
