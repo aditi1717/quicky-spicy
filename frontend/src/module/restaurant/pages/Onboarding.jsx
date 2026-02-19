@@ -34,6 +34,30 @@ const cuisinesOptions = [
 const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 const ONBOARDING_STORAGE_KEY = "restaurant_onboarding_data"
+const PAN_NUMBER_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/
+
+const getVerifiedPhoneFromStoredRestaurant = () => {
+  try {
+    const storedUser = localStorage.getItem("restaurant_user")
+    if (!storedUser) return ""
+    const user = JSON.parse(storedUser)
+    const candidates = [
+      user?.ownerPhone,
+      user?.primaryContactNumber,
+      user?.phone,
+      user?.phoneNumber,
+      user?.mobile,
+      user?.contactNumber,
+      user?.contact?.phone,
+      user?.owner?.phone,
+      user?.restaurant?.phone,
+    ]
+    const phone = candidates.find((value) => typeof value === "string" && value.trim())
+    return phone ? phone.trim() : ""
+  } catch {
+    return ""
+  }
+}
 
 // Helper functions for localStorage
 const saveOnboardingToLocalStorage = (step1, step2, step3, step4, currentStep) => {
@@ -116,6 +140,22 @@ const timeToString = (date) => {
   return `${hours}:${minutes}`
 }
 
+const formatDateToLocalYMD = (date) => {
+  if (!date || Number.isNaN(date.getTime?.())) return ""
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+const parseLocalYMDDate = (value) => {
+  if (!value || typeof value !== "string") return undefined
+  const parts = value.split("-").map(Number)
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return undefined
+  const [year, month, day] = parts
+  return new Date(year, month - 1, day)
+}
+
 function TimeSelector({ label, value, onChange }) {
   const timeValue = stringToTime(value)
 
@@ -176,6 +216,8 @@ export default function RestaurantOnboarding() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
+  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState("")
+  const [keyboardInset, setKeyboardInset] = useState(0)
 
   const [step1, setStep1] = useState({
     restaurantName: "",
@@ -230,6 +272,8 @@ export default function RestaurantOnboarding() {
 
   // Load from localStorage on mount and check URL parameter
   useEffect(() => {
+    setVerifiedPhoneNumber(getVerifiedPhoneFromStoredRestaurant())
+
     // Check if step is specified in URL (from OTP login redirect)
     const stepParam = searchParams.get("step")
     if (stepParam) {
@@ -301,6 +345,33 @@ export default function RestaurantOnboarding() {
       }
     }
   }, [searchParams])
+
+  useEffect(() => {
+    if (!verifiedPhoneNumber) return
+    setStep1((prev) => ({
+      ...prev,
+      ownerPhone: verifiedPhoneNumber,
+      primaryContactNumber: verifiedPhoneNumber,
+    }))
+  }, [verifiedPhoneNumber])
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return undefined
+
+    const updateInset = () => {
+      const vv = window.visualViewport
+      const inset = Math.max(0, Math.round(window.innerHeight - vv.height))
+      setKeyboardInset(inset > 120 ? inset : 0)
+    }
+
+    updateInset()
+    window.visualViewport.addEventListener("resize", updateInset)
+    window.visualViewport.addEventListener("scroll", updateInset)
+    return () => {
+      window.visualViewport.removeEventListener("resize", updateInset)
+      window.visualViewport.removeEventListener("scroll", updateInset)
+    }
+  }, [])
 
   // Save to localStorage whenever step data changes
   useEffect(() => {
@@ -511,6 +582,8 @@ export default function RestaurantOnboarding() {
 
     if (!step3.panNumber?.trim()) {
       errors.push("PAN number is required")
+    } else if (!PAN_NUMBER_REGEX.test(step3.panNumber.trim().toUpperCase())) {
+      errors.push("PAN number must be valid (e.g., ABCDE1234F)")
     }
     if (!step3.nameOnPan?.trim()) {
       errors.push("Name on PAN is required")
@@ -626,7 +699,7 @@ export default function RestaurantOnboarding() {
       // Calculate expiry date 1 year from now
       const expiryDate = new Date()
       expiryDate.setFullYear(expiryDate.getFullYear() + 1)
-      const expiryDateString = expiryDate.toISOString().split("T")[0]
+      const expiryDateString = formatDateToLocalYMD(expiryDate)
 
       setStep3({
         panNumber: "ABCDE1234F",
@@ -1033,6 +1106,7 @@ export default function RestaurantOnboarding() {
             <Input
               value={step1.ownerPhone || ""}
               onChange={(e) => setStep1({ ...step1, ownerPhone: e.target.value })}
+              readOnly={Boolean(verifiedPhoneNumber)}
               className="mt-1 bg-white text-sm text-black placeholder-black"
               placeholder="+91 98XXXXXX"
             />
@@ -1049,6 +1123,7 @@ export default function RestaurantOnboarding() {
             onChange={(e) =>
               setStep1({ ...step1, primaryContactNumber: e.target.value })
             }
+            readOnly={Boolean(verifiedPhoneNumber)}
             className="mt-1 bg-white text-sm text-black placeholder-black"
             placeholder="Restaurant's primary contact number"
           />
@@ -1161,6 +1236,7 @@ export default function RestaurantOnboarding() {
               type="file"
               multiple
               accept="image/*"
+              capture="environment"
               className="hidden"
               onChange={(e) => {
                 const files = Array.from(e.target.files || [])
@@ -1279,6 +1355,7 @@ export default function RestaurantOnboarding() {
             id="profileImageInput"
             type="file"
             accept="image/*"
+            capture="environment"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0] || null
@@ -1375,8 +1452,15 @@ export default function RestaurantOnboarding() {
             <Label className="text-xs text-gray-700">PAN number</Label>
             <Input
               value={step3.panNumber || ""}
-              onChange={(e) => setStep3({ ...step3, panNumber: e.target.value })}
+              onChange={(e) => {
+                const normalized = e.target.value
+                  .toUpperCase()
+                  .replace(/[^A-Z0-9]/g, "")
+                  .slice(0, 10)
+                setStep3({ ...step3, panNumber: normalized })
+              }}
               className="mt-1 bg-white text-sm text-black placeholder-black"
+              placeholder="ABCDE1234F"
             />
           </div>
           <div>
@@ -1393,6 +1477,7 @@ export default function RestaurantOnboarding() {
           <Input
             type="file"
             accept="image/*"
+            capture="environment"
             onChange={(e) =>
               setStep3({ ...step3, panImage: e.target.files?.[0] || null })
             }
@@ -1445,6 +1530,7 @@ export default function RestaurantOnboarding() {
             <Input
               type="file"
               accept="image/*"
+              capture="environment"
               onChange={(e) =>
                 setStep3({ ...step3, gstImage: e.target.files?.[0] || null })
               }
@@ -1473,7 +1559,7 @@ export default function RestaurantOnboarding() {
                 >
                   <span className={step3.fssaiExpiry ? "text-gray-900" : "text-gray-500"}>
                     {step3.fssaiExpiry
-                      ? new Date(step3.fssaiExpiry).toLocaleDateString("en-US", {
+                      ? parseLocalYMDDate(step3.fssaiExpiry)?.toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "short",
                         day: "numeric",
@@ -1486,10 +1572,10 @@ export default function RestaurantOnboarding() {
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={step3.fssaiExpiry ? new Date(step3.fssaiExpiry) : undefined}
+                  selected={parseLocalYMDDate(step3.fssaiExpiry)}
                   onSelect={(date) => {
                     if (date) {
-                      const formattedDate = date.toISOString().split("T")[0]
+                      const formattedDate = formatDateToLocalYMD(date)
                       setStep3({ ...step3, fssaiExpiry: formattedDate })
                     }
                   }}
@@ -1503,6 +1589,7 @@ export default function RestaurantOnboarding() {
         <Input
           type="file"
           accept="image/*"
+          capture="environment"
           onChange={(e) =>
             setStep3({ ...step3, fssaiImage: e.target.files?.[0] || null })
           }
@@ -1640,7 +1727,18 @@ export default function RestaurantOnboarding() {
           </div>
         </header>
 
-        <main className="flex-1 px-4 sm:px-6 py-4 space-y-4">
+        <main
+          className="flex-1 px-4 sm:px-6 py-4 space-y-4"
+          style={{ paddingBottom: keyboardInset ? `${keyboardInset + 20}px` : undefined }}
+          onFocusCapture={(e) => {
+            const target = e.target
+            if (!(target instanceof HTMLElement)) return
+            if (!target.matches("input, textarea, select")) return
+            window.setTimeout(() => {
+              target.scrollIntoView({ behavior: "smooth", block: "center" })
+            }, 250)
+          }}
+        >
           {loading ? (
             <p className="text-sm text-gray-600">Loading...</p>
           ) : (
@@ -1654,7 +1752,7 @@ export default function RestaurantOnboarding() {
           </div>
         )}
 
-        <footer className="px-4 sm:px-6 py-3 bg-white">
+        <footer className={`px-4 sm:px-6 py-3 bg-white ${keyboardInset ? "hidden" : ""}`}>
           <div className="flex justify-between items-center">
             <Button
               variant="ghost"
