@@ -1472,7 +1472,7 @@ export default function OrdersMain() {
               exit={{ opacity: 0 }}
             >
               <motion.div
-                className="w-[95%] max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
+                className="w-[95%] max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden p-1 pb-8"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
@@ -1512,7 +1512,7 @@ export default function OrdersMain() {
                 </div>
 
                 {/* Content */}
-                <div className="px-4 py-4 max-h-[60vh] overflow-y-auto">
+                <div className="px-4 pt-4 pb-12 max-h-[60vh] overflow-y-auto">
                   {/* Customer info */}
                   <div className="mb-4">
                     <h4 className="text-sm font-semibold text-gray-900">
@@ -1643,7 +1643,7 @@ export default function OrdersMain() {
                   </div>
 
                   {/* Accept and Reject buttons */}
-                  <div className="space-y-3">
+                  <div className="space-y-4 pb-4">
                     {/* Accept button with countdown */}
                     <div className="relative">
                       <button
@@ -1671,12 +1671,7 @@ export default function OrdersMain() {
                   </div>
                 </div>
 
-                {/* Footer */}
-                <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-                  <button className="text-sm text-gray-600 hover:text-gray-900 transition-colors underline mx-auto block">
-                    Need help with this order?
-                  </button>
-                </div>
+
               </motion.div>
             </motion.div>
           </>
