@@ -67,19 +67,19 @@ export default function BottomPopup({
   const handleTouchStart = (e) => {
     const target = e.target
     const isHandle = handleRef.current?.contains(target)
-    
+
     // If clicking on handle, don't start swipe - handle will toggle collapse
     if (isHandle) {
       return
     }
-    
+
     // Check if touch is in handle area or top portion of popup
     const rect = popupRef.current?.getBoundingClientRect()
     if (!rect) return
-    
+
     const touchY = e.touches[0].clientY
     const handleArea = rect.top + 80 // Top 80px is swipeable area
-    
+
     // Allow swipe if touching top area (but not handle)
     if (touchY <= handleArea) {
       e.stopPropagation()
@@ -92,10 +92,10 @@ export default function BottomPopup({
   // Handle touch move for swipe
   const handleTouchMove = (e) => {
     if (!isSwiping.current || !isOpen) return
-    
+
     const currentY = e.touches[0].clientY
     const deltaY = currentY - swipeStartY.current
-    
+
     // Only allow downward swipe (positive deltaY)
     // Don't call preventDefault - CSS touch-action: none handles scrolling prevention
     if (deltaY > 0) {
@@ -112,12 +112,12 @@ export default function BottomPopup({
       setIsDragging(false)
       return
     }
-    
+
     e.stopPropagation()
-    
+
     const deltaY = swipeStartY.current - e.changedTouches[0].clientY
     const threshold = 100 // Minimum swipe distance to close
-    
+
     // If swiped down enough, close the popup
     if (deltaY < -threshold) {
       handleClose()
@@ -126,7 +126,7 @@ export default function BottomPopup({
       setDragY(0)
       setIsDragging(false)
     }
-    
+
     isSwiping.current = false
     swipeStartY.current = 0
   }
@@ -135,22 +135,22 @@ export default function BottomPopup({
   const handleMouseDown = (e) => {
     // Don't allow swipe if disabled
     if (disableSwipeToClose) return
-    
+
     const target = e.target
     const isHandle = handleRef.current?.contains(target)
-    
+
     // If clicking on handle, don't start swipe - handle will toggle collapse
     if (isHandle) {
       e.stopPropagation()
       return
     }
-    
+
     const rect = popupRef.current?.getBoundingClientRect()
     if (!rect) return
-    
+
     const mouseY = e.clientY
     const handleArea = rect.top + 80
-    
+
     if (mouseY <= handleArea) {
       e.preventDefault()
       e.stopPropagation()
@@ -163,10 +163,10 @@ export default function BottomPopup({
   const handleMouseMove = (e) => {
     // Don't allow swipe if disabled
     if (disableSwipeToClose || !isSwiping.current || !isOpen) return
-    
+
     const currentY = e.clientY
     const deltaY = currentY - swipeStartY.current
-    
+
     if (deltaY > 0) {
       // e.preventDefault() // Not needed for mouse events, but keeping for consistency
       setDragY(deltaY)
@@ -180,17 +180,17 @@ export default function BottomPopup({
       setIsDragging(false)
       return
     }
-    
+
     const deltaY = swipeStartY.current - e.clientY
     const threshold = 100
-    
+
     if (deltaY < -threshold) {
       handleClose()
     } else {
       setDragY(0)
       setIsDragging(false)
     }
-    
+
     isSwiping.current = false
     swipeStartY.current = 0
   }
@@ -202,7 +202,7 @@ export default function BottomPopup({
     } else {
       document.body.style.overflow = ''
     }
-    
+
     return () => {
       document.body.style.overflow = ''
     }
@@ -240,33 +240,33 @@ export default function BottomPopup({
         <>
           {/* Backdrop */}
           {showBackdrop && backdropBlocksInteraction && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={handleBackdropClick}
-            className="fixed inset-0 bg-black/50 z-[100]"
-          />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={handleBackdropClick}
+              className="fixed inset-0 bg-black/50 z-[100]"
+            />
           )}
 
           {/* Popup */}
           <motion.div
             ref={popupRef}
             initial={{ y: "100%" }}
-            animate={{ 
+            animate={{
               y: isDragging ? dragY : 0,
-              transition: isDragging ? { duration: 0 } : { 
-                type: "spring", 
-                damping: 30, 
-                stiffness: 300 
+              transition: isDragging ? { duration: 0 } : {
+                type: "spring",
+                damping: 30,
+                stiffness: 300
               }
             }}
             exit={{ y: "100%" }}
-            transition={{ 
-              type: "spring", 
-              damping: 30, 
-              stiffness: 300 
+            transition={{
+              type: "spring",
+              damping: 30,
+              stiffness: 300
             }}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
@@ -283,7 +283,7 @@ export default function BottomPopup({
               handlePopupClick(e)
             }}
             className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-[110] overflow-hidden flex flex-col"
-            style={{ 
+            style={{
               maxHeight: isCollapsed ? "120px" : maxHeight,
               touchAction: 'none'
             }}
@@ -315,7 +315,7 @@ export default function BottomPopup({
                   // Prevent drag when clicking handle
                   e.stopPropagation()
                 }}
-                style={{ 
+                style={{
                   touchAction: 'manipulation',
                   WebkitTapHighlightColor: 'transparent',
                   pointerEvents: 'auto',
@@ -323,10 +323,10 @@ export default function BottomPopup({
                   background: 'transparent'
                 }}
               >
-                <ChevronDown 
+                <ChevronDown
                   className="w-6 h-6 text-gray-400 mb-1 pointer-events-none"
                 />
-                <div 
+                <div
                   className="w-12 h-1.5 bg-gray-300 rounded-full pointer-events-none"
                 />
               </button>
@@ -334,7 +334,7 @@ export default function BottomPopup({
 
             {/* Header */}
             {(title || showCloseButton) && (
-              <div className="flex items-center justify-between px-4 pb-3 border-b border-gray-100">
+              <div className={`flex items-center justify-between px-4 pb-3 border-b border-gray-100 ${!showHandle ? 'pt-5' : ''}`}>
                 {title && (
                   <h3 className="text-lg font-semibold text-gray-900">
                     {title}

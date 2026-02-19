@@ -1049,7 +1049,8 @@ export default function PocketPage() {
         isOpen={showCashLimitPopup}
         onClose={() => setShowCashLimitPopup(false)}
         title="Available Cash Limit?"
-        showCloseButton={true}
+        showCloseButton={false}
+        showHandle={false}
         closeOnBackdropClick={true}
         maxHeight="60vh"
       >
