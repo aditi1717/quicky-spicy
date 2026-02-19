@@ -59,14 +59,14 @@ export default function WeekSelector({ weekStartsOn = 0, onChange, className }) 
   return (
     <div className={cn("w-full", className)}>
       {/* Pills */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-center gap-2">
         <Button
           variant="outline"
           onClick={setThisWeek}
           className={cn(
             "rounded-md px-2 h-10 text-base",
             isSameRange(range, computeRange(new Date())) &&
-              "bg-emerald-50 text-emerald-900 border-emerald-200"
+            "bg-emerald-50 text-emerald-900 border-emerald-200"
           )}
         >
           This week
