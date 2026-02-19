@@ -1747,8 +1747,17 @@ export default function RestaurantOnboarding() {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <div className="min-h-screen bg-gray-100 flex flex-col">
-        <header className="px-4 py-4 sm:px-6 sm:py-5 bg-white flex items-center justify-between">
-          <div className="text-sm font-semibold text-black">Restaurant onboarding</div>
+        <header className="px-4 py-4 sm:px-6 sm:py-5 bg-white flex items-center justify-between border-b">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/restaurant/login")}
+              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Close onboarding"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+            <div className="text-sm font-semibold text-black">Restaurant onboarding</div>
+          </div>
           <div className="flex items-center gap-3">
             {import.meta.env.DEV && (
               <Button

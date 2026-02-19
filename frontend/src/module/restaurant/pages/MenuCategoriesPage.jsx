@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { 
-  ArrowLeft, 
-  Plus, 
-  X, 
-  Edit2, 
-  Trash2, 
+import {
+  ArrowLeft,
+  Plus,
+  X,
+  Edit2,
+  Trash2,
   GripVertical,
   Loader2,
-  Check
+  Eye,
+  EyeOff
 } from "lucide-react"
 import { restaurantAPI } from "@/lib/api"
 import { toast } from "sonner"
@@ -178,7 +179,7 @@ export default function MenuCategoriesPage() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-gray-900">{category.name}</h3>
                       {!category.isActive && (
-                        <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">Inactive</span>
+                        <span className="text-[10px] px-2 py-0.5 bg-red-50 text-red-600 border border-red-100 rounded-full font-medium">Deactivated</span>
                       )}
                     </div>
                     <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
@@ -189,14 +190,17 @@ export default function MenuCategoriesPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleToggleActive(category)}
-                    className={`p-2 rounded-lg transition-colors ${
-                      category.isActive
-                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                    className={`p-2 rounded-lg transition-all ${category.isActive
+                        ? 'bg-green-50 text-green-600 hover:bg-green-100 border border-green-100'
+                        : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-100'
+                      }`}
                     title={category.isActive ? 'Deactivate' : 'Activate'}
                   >
-                    <Check className="w-4 h-4" />
+                    {category.isActive ? (
+                      <Eye className="w-4 h-4" />
+                    ) : (
+                      <EyeOff className="w-4 h-4" />
+                    )}
                   </button>
                   <button
                     onClick={() => handleEditCategory(category)}
