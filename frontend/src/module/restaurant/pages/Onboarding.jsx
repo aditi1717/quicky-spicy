@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Image as ImageIcon, Upload, Clock, Calendar as CalendarIcon, Sparkles } from "lucide-react"
+import { Image as ImageIcon, Upload, Clock, Calendar as CalendarIcon, Sparkles, X } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -218,6 +218,7 @@ export default function RestaurantOnboarding() {
   const [error, setError] = useState("")
   const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState("")
   const [keyboardInset, setKeyboardInset] = useState(0)
+  const [isFssaiCalendarOpen, setIsFssaiCalendarOpen] = useState(false)
 
   const [step1, setStep1] = useState({
     restaurantName: "",
@@ -1277,6 +1278,22 @@ export default function RestaurantOnboarding() {
                     key={idx}
                     className="relative aspect-[4/5] rounded-md overflow-hidden bg-gray-100"
                   >
+                    <div className="absolute top-1 right-1 z-30">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setStep2((prev) => ({
+                            ...prev,
+                            menuImages: prev.menuImages.filter((_, i) => i !== idx),
+                          }));
+                        }}
+                        className="bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                     {imageUrl ? (
                       <img
                         src={imageUrl}
@@ -1304,33 +1321,51 @@ export default function RestaurantOnboarding() {
         <div className="space-y-2">
           <Label className="text-xs font-medium text-gray-700">Restaurant profile image</Label>
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-              {step2.profileImage ? (
-                (() => {
-                  let imageSrc = null;
+            <div className="relative">
+              <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
+                {step2.profileImage ? (
+                  (() => {
+                    let imageSrc = null;
 
-                  if (step2.profileImage instanceof File) {
-                    imageSrc = URL.createObjectURL(step2.profileImage);
-                  } else if (step2.profileImage?.url) {
-                    // If it's an object with url property (from backend)
-                    imageSrc = step2.profileImage.url;
-                  } else if (typeof step2.profileImage === 'string') {
-                    // If it's a direct URL string
-                    imageSrc = step2.profileImage;
-                  }
+                    if (step2.profileImage instanceof File) {
+                      imageSrc = URL.createObjectURL(step2.profileImage);
+                    } else if (step2.profileImage?.url) {
+                      // If it's an object with url property (from backend)
+                      imageSrc = step2.profileImage.url;
+                    } else if (typeof step2.profileImage === 'string') {
+                      // If it's a direct URL string
+                      imageSrc = step2.profileImage;
+                    }
 
-                  return imageSrc ? (
-                    <img
-                      src={imageSrc}
-                      alt="Restaurant profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <ImageIcon className="w-6 h-6 text-gray-500" />
-                  );
-                })()
-              ) : (
-                <ImageIcon className="w-6 h-6 text-gray-500" />
+                    return imageSrc ? (
+                      <img
+                        src={imageSrc}
+                        alt="Restaurant profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-gray-500" />
+                    );
+                  })()
+                ) : (
+                  <ImageIcon className="w-6 h-6 text-gray-500" />
+                )}
+              </div>
+              {step2.profileImage && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setStep2((prev) => ({
+                      ...prev,
+                      profileImage: null,
+                    }));
+                  }}
+                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors z-10"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               )}
             </div>
             <div className="flex-1 flex-col flex items-center justify-between gap-3">
@@ -1551,10 +1586,11 @@ export default function RestaurantOnboarding() {
           />
           <div>
             <Label className="text-xs text-gray-700 mb-1 block">FSSAI expiry date</Label>
-            <Popover>
+            <Popover open={isFssaiCalendarOpen} onOpenChange={setIsFssaiCalendarOpen}>
               <PopoverTrigger asChild>
                 <button
                   type="button"
+                  onClick={() => setIsFssaiCalendarOpen(true)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-md bg-white text-sm text-left flex items-center justify-between hover:bg-gray-50"
                 >
                   <span className={step3.fssaiExpiry ? "text-gray-900" : "text-gray-500"}>
@@ -1569,19 +1605,24 @@ export default function RestaurantOnboarding() {
                   <CalendarIcon className="w-4 h-4 text-gray-500" />
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={parseLocalYMDDate(step3.fssaiExpiry)}
-                  onSelect={(date) => {
-                    if (date) {
-                      const formattedDate = formatDateToLocalYMD(date)
-                      setStep3({ ...step3, fssaiExpiry: formattedDate })
-                    }
-                  }}
-                  initialFocus
-                  className="rounded-md border border-gray-200"
-                />
+              <PopoverContent className="w-auto p-0 z-[100]" align="start">
+                <div className="bg-white rounded-md shadow-lg border border-gray-200">
+                  <Calendar
+                    mode="single"
+                    selected={parseLocalYMDDate(step3.fssaiExpiry)}
+                    onSelect={(date) => {
+                      if (date) {
+                        const formattedDate = formatDateToLocalYMD(date)
+                        setStep3({ ...step3, fssaiExpiry: formattedDate })
+                        setIsFssaiCalendarOpen(false)
+                      }
+                    }}
+                    initialFocus
+                    classNames={{
+                      today: "bg-transparent text-foreground border-none", // Remove today highlight
+                    }}
+                  />
+                </div>
               </PopoverContent>
             </Popover>
           </div>
