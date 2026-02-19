@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Upload, X, Check } from "lucide-react"
 import { deliveryAPI } from "@/lib/api"
@@ -13,11 +13,21 @@ export default function SignupStep2() {
     panPhoto: null,
     drivingLicensePhoto: null
   })
-  const [uploadedDocs, setUploadedDocs] = useState({
-    profilePhoto: null,
-    aadharPhoto: null,
-    panPhoto: null,
-    drivingLicensePhoto: null
+  const [uploadedDocs, setUploadedDocs] = useState(() => {
+    const saved = sessionStorage.getItem("deliverySignupDocs")
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch (e) {
+        console.error("Error parsing saved docs:", e)
+      }
+    }
+    return {
+      profilePhoto: null,
+      aadharPhoto: null,
+      panPhoto: null,
+      drivingLicensePhoto: null
+    }
   })
   const [uploading, setUploading] = useState({
     profilePhoto: false,
@@ -26,6 +36,11 @@ export default function SignupStep2() {
     drivingLicensePhoto: false
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Save uploaded docs to session storage whenever they change
+  useEffect(() => {
+    sessionStorage.setItem("deliverySignupDocs", JSON.stringify(uploadedDocs))
+  }, [uploadedDocs])
 
   const handleFileSelect = async (docType, file) => {
     if (!file) return
@@ -59,12 +74,12 @@ export default function SignupStep2() {
 
       if (response?.data?.success && response?.data?.data) {
         const { url, publicId } = response.data.data
-        
+
         setDocuments(prev => ({
           ...prev,
           [docType]: file
         }))
-        
+
         setUploadedDocs(prev => ({
           ...prev,
           [docType]: { url, publicId }
@@ -136,7 +151,7 @@ export default function SignupStep2() {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           {label} {required && <span className="text-red-500">*</span>}
         </label>
-        
+
         {uploaded ? (
           <div className="relative">
             <img
@@ -220,11 +235,10 @@ export default function SignupStep2() {
           <button
             type="submit"
             disabled={isSubmitting || !uploadedDocs.profilePhoto || !uploadedDocs.aadharPhoto || !uploadedDocs.panPhoto || !uploadedDocs.drivingLicensePhoto}
-            className={`w-full py-4 rounded-lg font-bold text-white text-base transition-colors mt-6 ${
-              isSubmitting || !uploadedDocs.profilePhoto || !uploadedDocs.aadharPhoto || !uploadedDocs.panPhoto || !uploadedDocs.drivingLicensePhoto
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-[#00B761] hover:bg-[#00A055]"
-            }`}
+            className={`w-full py-4 rounded-lg font-bold text-white text-base transition-colors mt-6 ${isSubmitting || !uploadedDocs.profilePhoto || !uploadedDocs.aadharPhoto || !uploadedDocs.panPhoto || !uploadedDocs.drivingLicensePhoto
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-[#00B761] hover:bg-[#00A055]"
+              }`}
           >
             {isSubmitting ? "Submitting..." : "Complete Signup"}
           </button>

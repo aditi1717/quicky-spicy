@@ -404,10 +404,10 @@ export const restaurantAPI = {
     const config =
       data instanceof FormData
         ? {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
         : {};
     return apiClient.post(API_ENDPOINTS.RESTAURANT.STAFF, data, config);
   },
@@ -1960,3 +1960,26 @@ export const heroBannerAPI = {
     return apiClient.get(API_ENDPOINTS.HERO_BANNER.GOURMET_PUBLIC);
   },
 };
+
+// Public pages API (Terms, Privacy, etc.)
+export const publicAPI = {
+  getTerms: () => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.TERMS_PUBLIC);
+  },
+  getPrivacy: () => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.PRIVACY_PUBLIC);
+  },
+  getAbout: () => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.ABOUT_PUBLIC);
+  },
+  getRefund: () => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.REFUND_PUBLIC);
+  },
+  getShipping: () => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.SHIPPING_PUBLIC);
+  },
+  getCancellation: () => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.CANCELLATION_PUBLIC);
+  }
+};
+

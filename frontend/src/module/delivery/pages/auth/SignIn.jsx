@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useNavigate, Link } from "react-router-dom"
 import {
   Select,
   SelectContent,
@@ -41,6 +41,26 @@ export default function DeliverySignIn() {
     phone: "",
     countryCode: "+91",
   })
+
+  // Pre-fill form from sessionStorage if data exists (e.g., when coming back from OTP)
+  useEffect(() => {
+    const stored = sessionStorage.getItem("deliveryAuthData")
+    if (stored) {
+      try {
+        const data = JSON.parse(stored)
+        if (data.phone) {
+          // Extract digits after +91
+          const phoneDigits = data.phone.replace("+91", "").trim()
+          setFormData(prev => ({
+            ...prev,
+            phone: phoneDigits
+          }))
+        }
+      } catch (err) {
+        console.error("Error parsing stored auth data:", err)
+      }
+    }
+  }, [])
   const [error, setError] = useState("")
   const [isSending, setIsSending] = useState(false)
 
@@ -59,14 +79,9 @@ export default function DeliverySignIn() {
     }
 
     // India-specific validation
-    if (countryCode === "+91") {
-      if (digitsOnly.length !== 10) {
-        return "Indian phone number must be 10 digits"
-      }
-      const firstDigit = digitsOnly[0]
-      if (!["6", "7", "8", "9"].includes(firstDigit)) {
-        return "Invalid Indian mobile number"
-      }
+    // India-specific validation (Fixed to +91 only)
+    if (digitsOnly.length !== 10) {
+      return "Phone number must be exactly 10 digits"
     }
 
     return ""
@@ -113,8 +128,8 @@ export default function DeliverySignIn() {
   }
 
   const handlePhoneChange = (e) => {
-    // Only allow digits
-    const value = e.target.value.replace(/\D/g, "")
+    // Only allow digits and limit to 10 digits
+    const value = e.target.value.replace(/\D/g, "").slice(0, 10)
     setFormData({
       ...formData,
       phone: value,
@@ -140,7 +155,7 @@ export default function DeliverySignIn() {
             {companyName.toLowerCase()}
           </h1>
         </div>
-        
+
         {/* DELIVERY Badge */}
         <div className="bg-black px-6 py-2 rounded mt-2">
           <span className="text-white font-semibold text-sm uppercase tracking-wide">
@@ -165,46 +180,29 @@ export default function DeliverySignIn() {
           {/* Mobile Number Input */}
           <div className="space-y-2 w-full">
             <div className="flex gap-2 items-stretch w-full">
-              <Select
-                value={formData.countryCode}
-                onValueChange={handleCountryCodeChange}
-              >
-                <SelectTrigger className="w-[100px] !h-12 border-gray-300 rounded-lg flex items-center shrink-0" size="default">
-                  <SelectValue>
-                    <span className="flex items-center gap-2">
-                      <span>{selectedCountry.flag}</span>
-                      <span>{selectedCountry.code}</span>
-                    </span>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px] overflow-y-auto">
-                  {countryCodes.map((country) => (
-                    <SelectItem key={country.code} value={country.code}>
-                      <span className="flex items-center gap-2">
-                        <span>{country.flag}</span>
-                        <span>{country.code}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center px-4 h-12 border border-gray-300 bg-gray-50 text-gray-900 rounded-lg shrink-0">
+                <span className="flex items-center gap-2 text-base font-medium">
+                  <span>🇮🇳</span>
+                  <span>+91</span>
+                </span>
+              </div>
               <input
                 type="tel"
                 inputMode="numeric"
-                placeholder="Enter mobile number"
+                maxLength={10}
+                placeholder="Enter 10-digit mobile number"
                 value={formData.phone}
                 onChange={handlePhoneChange}
                 autoComplete="off"
                 autoFocus={false}
-                className={`flex-1 h-12 px-4 text-gray-900 placeholder-gray-400 focus:outline-none text-base border rounded-lg min-w-0 ${
-                  error ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`flex-1 h-12 px-4 text-gray-900 placeholder-gray-400 focus:outline-none text-base border rounded-lg min-w-0 ${error ? "border-red-500" : "border-gray-300"
+                  }`}
               />
             </div>
 
             {/* Hint Text */}
             <p className="text-sm text-gray-500">
-              Enter a valid 10 digit mobile number
+              Enter exactly 10 digits
             </p>
 
             {error && (
@@ -223,11 +221,10 @@ export default function DeliverySignIn() {
           <button
             onClick={handleSendOTP}
             disabled={!isValid || isSending}
-            className={`w-full py-4 rounded-lg font-bold text-base transition-colors ${
-              isValid && !isSending
-                ? "bg-[#00B761] hover:bg-[#00A055] active:bg-[#009049] text-white"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
+            className={`w-full py-4 rounded-lg font-bold text-base transition-colors ${isValid && !isSending
+              ? "bg-[#00B761] hover:bg-[#00A055] active:bg-[#009049] text-white"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
           >
             {isSending ? "Sending OTP..." : "Continue"}
           </button>
@@ -235,9 +232,9 @@ export default function DeliverySignIn() {
           {/* Terms and Conditions */}
           <p className="text-xs text-center text-gray-600 px-4">
             By continuing, you agree to our{" "}
-            <a href="#" className="text-blue-600 hover:underline">
+            <Link to="/delivery/terms" className="text-blue-600 hover:underline">
               Terms and Conditions
-            </a>
+            </Link>
           </p>
         </div>
       </div>

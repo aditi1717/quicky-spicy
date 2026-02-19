@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { useNavigate, useSearchParams, Link } from "react-router-dom"
 import { Mail, Phone, AlertCircle, Loader2 } from "lucide-react"
 import AnimatedPage from "../../components/AnimatedPage"
 import { Button } from "@/components/ui/button"
@@ -431,6 +431,29 @@ export default function SignIn() {
     }
   }, [navigate, searchParams])
 
+  // Pre-fill form from sessionStorage if data exists (e.g., when coming back from OTP)
+  useEffect(() => {
+    const stored = sessionStorage.getItem("userAuthData")
+    if (stored) {
+      try {
+        const data = JSON.parse(stored)
+        if (data.phone) {
+          // Extract digits after +91
+          const phoneDigits = data.phone.replace("+91", "").trim()
+          setFormData(prev => ({
+            ...prev,
+            phone: phoneDigits,
+            name: data.name || prev.name,
+            email: data.email || prev.email
+          }))
+          if (data.method) setAuthMethod(data.method)
+        }
+      } catch (err) {
+        console.error("Error parsing stored auth data:", err)
+      }
+    }
+  }, [])
+
   // Get selected country details dynamically
   const selectedCountry = countryCodes.find(c => c.code === formData.countryCode) || countryCodes[2] // Default to India (+91)
 
@@ -450,9 +473,9 @@ export default function SignIn() {
       return "Phone number is required"
     }
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, "")
-    const phoneRegex = /^\d{7,15}$/
+    const phoneRegex = /^\d{10}$/
     if (!phoneRegex.test(cleanPhone)) {
-      return "Phone number must be 7-15 digits"
+      return "Phone number must be exactly 10 digits"
     }
     return ""
   }
@@ -475,7 +498,13 @@ export default function SignIn() {
   }
 
   const handleChange = (e) => {
-    const { name, value } = e.target
+    let { name, value } = e.target
+
+    // Only allow numbers for phone field and limit to 10 digits
+    if (name === "phone") {
+      value = value.replace(/\D/g, "").slice(0, 10)
+    }
+
     setFormData({
       ...formData,
       [name]: value,
@@ -644,7 +673,7 @@ export default function SignIn() {
 
       {/* Mobile: Top Section - Banner Image */}
       {/* Desktop: Left Section - Banner Image */}
-      <div className="relative md:hidden w-full shrink-0" style={{ height: "45vh", minHeight: "300px" }}>
+      <div className="relative md:hidden w-full shrink-0" style={{ height: "30vh", minHeight: "200px" }}>
         <img
           src={loginBanner}
           alt="Food Banner"
@@ -664,7 +693,7 @@ export default function SignIn() {
 
       {/* Mobile: Bottom Section - White Login Form */}
       {/* Desktop: Right Section - Login Form */}
-      <div className="bg-white dark:bg-[#1a1a1a] p-3 sm:p-4 md:p-6 lg:p-8 xl:p-10 overflow-y-auto md:w-1/2 md:flex md:items-center md:justify-center md:h-screen">
+      <div className="bg-white dark:bg-[#1a1a1a] p-4 sm:p-5 md:p-6 lg:p-8 xl:p-10 overflow-hidden md:w-1/2 md:flex md:items-center md:justify-center md:h-screen">
         <div className="max-w-md lg:max-w-lg xl:max-w-xl mx-auto space-y-6 md:space-y-8 lg:space-y-10 w-full">
           {/* Heading */}
           <div className="text-center space-y-2 md:space-y-3">
@@ -703,38 +732,20 @@ export default function SignIn() {
             {authMethod === "phone" && (
               <div className="space-y-2">
                 <div className="flex gap-2 items-stretch">
-                  <Select
-                    value={formData.countryCode}
-                    onValueChange={handleCountryCodeChange}
-                  >
-                    <SelectTrigger
-                      className="w-[100px] md:w-[120px] !h-12 md:!h-14 border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-black dark:text-white rounded-lg flex items-center transition-colors"
-                      size="default"
-                      aria-label="Select country code"
-                    >
-                      <SelectValue>
-                        <span className="flex items-center gap-2 text-sm md:text-base">
-                          <span>{selectedCountry.flag}</span>
-                          <span>{selectedCountry.code}</span>
-                        </span>
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[300px] overflow-y-auto">
-                      {countryCodes.map((country) => (
-                        <SelectItem key={country.code} value={country.code}>
-                          <span className="flex items-center gap-2">
-                            <span>{country.flag}</span>
-                            <span>{country.code}</span>
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center px-4 h-12 md:h-14 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#2a2a2a] text-black dark:text-white rounded-lg">
+                    <span className="flex items-center gap-2 text-sm md:text-base font-medium">
+                      <span>🇮🇳</span>
+                      <span>+91</span>
+                    </span>
+                  </div>
                   <Input
                     id="phone"
                     name="phone"
                     type="tel"
-                    placeholder="Enter Phone Number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={10}
+                    placeholder="Enter 10-digit Phone Number"
                     value={formData.phone}
                     onChange={handleChange}
                     className={`flex-1 h-12 md:h-14 text-base md:text-lg bg-white dark:bg-[#1a1a1a] text-black dark:text-white border-gray-300 dark:border-gray-700 rounded-lg ${errors.phone ? "border-red-500" : ""} transition-colors`}
@@ -887,11 +898,9 @@ export default function SignIn() {
               By continuing, you agree to our
             </p>
             <div className="flex justify-center gap-2 flex-wrap">
-              <a href="#" className="underline hover:text-gray-700 dark:hover:text-gray-300 transition-colors">Terms of Service</a>
+              <Link to="/profile/terms" className="underline hover:text-gray-700 dark:hover:text-gray-300 transition-colors">Terms of Service</Link>
               <span>•</span>
-              <a href="#" className="underline hover:text-gray-700 dark:hover:text-gray-300 transition-colors">Privacy Policy</a>
-              <span>•</span>
-              <a href="#" className="underline hover:text-gray-700 dark:hover:text-gray-300 transition-colors">Content Policy</a>
+              <Link to="/profile/privacy" className="underline hover:text-gray-700 dark:hover:text-gray-300 transition-colors">Privacy Policy</Link>
             </div>
           </div>
         </div>

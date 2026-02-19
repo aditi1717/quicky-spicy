@@ -127,6 +127,7 @@ export default function UserLayout() {
     location.pathname === "/under-250" ||
     location.pathname === "/user/under-250" ||
     location.pathname === "/profile" ||
+    location.pathname.startsWith("/profile") ||
     location.pathname === "/user/profile" ||
     location.pathname.startsWith("/user/profile")
 

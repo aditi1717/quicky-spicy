@@ -243,7 +243,7 @@ export default function Profile() {
 
   return (
     <AnimatedPage className="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a]">
-      <div className="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-4 sm:py-6 md:py-8 lg:py-10">
+      <div className="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-4 sm:py-6 md:py-8 lg:py-10 pb-20 sm:pb-24">
         {/* Back Arrow */}
         <div className="mb-4">
           <Link to="/user">
@@ -651,7 +651,7 @@ export default function Profile() {
         </div>
 
         {/* More Section */}
-        <div className="mb-6 pb-4">
+        <div className="mb-8 pb-8">
           <div className="flex items-center gap-2 mb-2 px-1">
             <div className="w-1 h-4 bg-[#EB590E] rounded"></div>
             <h3 className="text-base font-semibold text-gray-900 dark:text-white">More</h3>

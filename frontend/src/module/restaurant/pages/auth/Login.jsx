@@ -27,7 +27,7 @@ const countryCodes = [
   { code: "+34", country: "ES", flag: "🇪🇸" },
   { code: "+61", country: "AU", flag: "🇦🇺" },
   { code: "+7", country: "RU", flag: "🇷🇺" },
-  { code: "+55", country: "BR", flag: "🇧🇷" }, 
+  { code: "+55", country: "BR", flag: "🇧🇷" },
   { code: "+52", country: "MX", flag: "🇲🇽" },
   { code: "+82", country: "KR", flag: "🇰🇷" },
   { code: "+65", country: "SG", flag: "🇸🇬" },
@@ -42,10 +42,13 @@ export default function RestaurantLogin() {
   const companyName = useCompanyName()
   const navigate = useNavigate()
   const [loginMethod, setLoginMethod] = useState("phone") // "phone" or "email"
-  const [formData, setFormData] = useState({
-    phone: "",
-    countryCode: "+91",
-    email: "",
+  const [formData, setFormData] = useState(() => {
+    const saved = sessionStorage.getItem("restaurantLoginPhone")
+    return {
+      phone: saved || "",
+      countryCode: "+91",
+      email: "",
+    }
   })
   const [errors, setErrors] = useState({
     phone: "",
@@ -66,20 +69,20 @@ export default function RestaurantLogin() {
     if (!phone || phone.trim() === "") {
       return "Phone number is required"
     }
-    
+
     // Remove any non-digit characters for validation
     const digitsOnly = phone.replace(/\D/g, "")
-    
+
     // Minimum length check (at least 7 digits)
     if (digitsOnly.length < 7) {
       return "Phone number must be at least 7 digits"
     }
-    
+
     // Maximum length check (typically 15 digits for international numbers)
     if (digitsOnly.length > 15) {
       return "Phone number is too long"
     }
-    
+
     // Country-specific validation (India +91)
     if (countryCode === "+91") {
       if (digitsOnly.length !== 10) {
@@ -91,7 +94,7 @@ export default function RestaurantLogin() {
         return "Invalid Indian mobile number"
       }
     }
-    
+
     return ""
   }
 
@@ -99,15 +102,15 @@ export default function RestaurantLogin() {
     // Mark all fields as touched
     setTouched({ phone: true })
     setApiError("")
-    
+
     // Validate
     const phoneError = validatePhone(formData.phone, formData.countryCode)
-    
+
     if (phoneError) {
       setErrors({ phone: phoneError })
       return
     }
-    
+
     // Clear errors if validation passes
     setErrors({ phone: "" })
 
@@ -148,12 +151,12 @@ export default function RestaurantLogin() {
     if (!email || email.trim() === "") {
       return "Email is required"
     }
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       return "Please enter a valid email address"
     }
-    
+
     return ""
   }
 
@@ -164,7 +167,7 @@ export default function RestaurantLogin() {
       email: value,
     }
     setFormData(newFormData)
-    
+
     // Validate if field has been touched
     if (touched.email) {
       const error = validateEmail(value)
@@ -186,15 +189,15 @@ export default function RestaurantLogin() {
     // Mark email field as touched
     setTouched({ ...touched, email: true })
     setApiError("")
-    
+
     // Validate
     const emailError = validateEmail(formData.email)
-    
+
     if (emailError) {
       setErrors({ ...errors, email: emailError })
       return
     }
-    
+
     // Clear errors if validation passes
     setErrors({ ...errors, email: "" })
 
@@ -273,18 +276,18 @@ export default function RestaurantLogin() {
   }
 
   const handlePhoneChange = (e) => {
-    // Only allow digits
-    const value = e.target.value.replace(/\D/g, "")
+    const value = e.target.value.replace(/\D/g, "").slice(0, 10)
     const newFormData = {
       ...formData,
       phone: value,
     }
     setFormData(newFormData)
-    
+    sessionStorage.setItem("restaurantLoginPhone", value)
+
     // Real-time validation
     const error = validatePhone(value, formData.countryCode)
     setErrors({ ...errors, phone: error })
-    
+
     // Mark as touched when user starts typing
     if (!touched.phone && value.length > 0) {
       setTouched({ ...touched, phone: true })
@@ -307,7 +310,7 @@ export default function RestaurantLogin() {
       countryCode: value,
     }
     setFormData(newFormData)
-    
+
     // Re-validate phone if it's been touched
     if (touched.phone) {
       const error = validatePhone(formData.phone, value)
@@ -320,40 +323,32 @@ export default function RestaurantLogin() {
 
   return (
     <div className="max-h-screen h-screen bg-white flex flex-col">
-      {/* Header with Back Button */}
       <div className="relative flex items-center justify-center py-4 px-4 mt-2">
-        
-        <button
-          onClick={() => navigate("/restaurant/welcome")}
-          className="absolute left-4 top-4"
-          aria-label="Go back"
-        >
-          <ArrowLeft className="h-5 w-5 text-black" />
-        </button>
+        {/* Back button removed per user request */}
       </div>
 
       {/* Top Section - Logo and Badge */}
       <div className="flex flex-col items-center pt-8 pb-8 px-6">
         {/* Appzeto Logo */}
         <div>
-          <h1 
+          <h1
             className="text-3xl italic md:text-4xl tracking-wide font-extrabold text-black"
             style={{
               WebkitTextStroke: "0.5px black",
               textStroke: "0.5px black"
             }}
           >
-          
+
             {companyName.toLowerCase()}
           </h1>
         </div>
-        
+
         {/* Restaurant Partner Badge */}
         <div className="">
           <span className="text-gray-600 font-light text-sm tracking-wide block text-center">
-          — restaurant partner —
+            — restaurant partner —
           </span>
-        </div>        
+        </div>
       </div>
 
       {/* Main Content - Form Section */}
@@ -362,7 +357,7 @@ export default function RestaurantLogin() {
           {/* Instruction Text */}
           <div className="text-center">
             <p className="text-base text-gray-700 leading-relaxed">
-              {loginMethod === "email" 
+              {loginMethod === "email"
                 ? "Enter your registered email and we will send an OTP to continue"
                 : "Enter your registered phone number and we will send an OTP to continue"
               }
@@ -398,21 +393,21 @@ export default function RestaurantLogin() {
                     ))}
                   </SelectContent>
                 </Select>
-                
+
                 {/* Phone Number Input */}
                 <div className="flex-1 flex flex-col">
                   <input
                     type="tel"
                     inputMode="numeric"
+                    maxLength={10}
                     placeholder="Enter phone number"
                     value={formData.phone}
                     onChange={handlePhoneChange}
                     onBlur={handlePhoneBlur}
-                  className={`w-full px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 text-base border rounded-lg min-w-0 bg-white ${
-                    errors.phone && formData.phone.length > 0
+                    className={`w-full px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 text-base border rounded-lg min-w-0 bg-white ${errors.phone && formData.phone.length > 0
                       ? "border-red-500 focus:ring-red-500 focus:border-red-500"
                       : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                  }`}
+                      }`}
                     style={{ height: '48px' }}
                   />
                   {errors.phone && formData.phone.length > 0 && (
@@ -430,11 +425,10 @@ export default function RestaurantLogin() {
               <Button
                 onClick={handleSendOTP}
                 disabled={!isValidPhone || isSending}
-                className={`w-full h-12 rounded-lg font-bold text-base transition-colors ${
-                  isValidPhone && !isSending
-                    ? "bg-blue-600 hover:bg-blue-700 text-white"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
+                className={`w-full h-12 rounded-lg font-bold text-base transition-colors ${isValidPhone && !isSending
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
               >
                 {isSending ? "Sending OTP..." : "Send OTP"}
               </Button>
@@ -452,11 +446,10 @@ export default function RestaurantLogin() {
                   value={formData.email}
                   onChange={handleEmailChange}
                   onBlur={handleEmailBlur}
-                  className={`w-full px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 text-base border rounded-lg bg-white ${
-                    errors.email && formData.email.length > 0
-                      ? "border-red-500 focus:ring-red-500 focus:border-red-500"
-                      : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                  }`}
+                  className={`w-full px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 text-base border rounded-lg bg-white ${errors.email && formData.email.length > 0
+                    ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                    : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    }`}
                   style={{ height: '48px' }}
                 />
                 {errors.email && formData.email.length > 0 && (
@@ -473,11 +466,10 @@ export default function RestaurantLogin() {
               <Button
                 onClick={handleSendEmailOTP}
                 disabled={!isValidEmail || isSending}
-                className={`w-full h-12 rounded-lg font-bold text-base transition-colors ${
-                  isValidEmail && !isSending
-                    ? "bg-blue-600 hover:bg-blue-700 text-white"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
+                className={`w-full h-12 rounded-lg font-bold text-base transition-colors ${isValidEmail && !isSending
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
               >
                 {isSending ? "Sending OTP..." : "Send OTP"}
               </Button>
@@ -542,16 +534,8 @@ export default function RestaurantLogin() {
         </div>
       </div>
 
-      {/* Bottom Section - Terms and Conditions */}
+      {/* Bottom Section - Empty as per user request to remove terms links */}
       <div className="px-6 pb-8 pt-4">
-        <div className="w-full max-w-md mx-auto">
-          <p className="text-xs text-center text-gray-600 leading-relaxed">
-            By continuing, you agree to our
-          </p>
-          <p className="text-xs text-center text-gray-600 underline mt-1">
-            Terms of Service | Privacy Policy | Code of Conduct
-          </p>
-        </div>
       </div>
     </div>
   )

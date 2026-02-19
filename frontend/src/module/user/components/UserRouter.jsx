@@ -303,46 +303,7 @@ export default function UserRouter() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/profile/terms"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/sign-in">
-                <Terms />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile/privacy"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/sign-in">
-                <Privacy />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile/refund"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/sign-in">
-                <Refund />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile/shipping"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/sign-in">
-                <Shipping />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile/cancellation"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/sign-in">
-                <Cancellation />
-              </ProtectedRoute>
-            }
-          />
+
           <Route
             path="/profile/send-feedback"
             element={
@@ -375,6 +336,13 @@ export default function UserRouter() {
               </ProtectedRoute>
             }
           />
+
+          {/* Public Legal Policies */}
+          <Route path="/profile/terms" element={<Terms />} />
+          <Route path="/profile/privacy" element={<Privacy />} />
+          <Route path="/profile/refund" element={<Refund />} />
+          <Route path="/profile/shipping" element={<Shipping />} />
+          <Route path="/profile/cancellation" element={<Cancellation />} />
 
           {/* Auth */}
           <Route path="/auth/sign-in" element={<AuthRedirect module="user"><SignIn /></AuthRedirect>} />

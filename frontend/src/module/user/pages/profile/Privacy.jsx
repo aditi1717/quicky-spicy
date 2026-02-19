@@ -69,10 +69,7 @@ export default function Privacy() {
           transition={{ duration: 0.5 }}
           className="p-6 md:p-8 lg:p-10"
         >
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
-            <Lock className="h-6 w-6 md:h-7 md:w-7 text-[#EB590E] dark:text-[#F97316]" />
-            {privacyData.title}
-          </h2>
+
           <div
             className="prose prose-slate dark:prose-invert max-w-none
               prose-headings:text-gray-900 dark:prose-headings:text-white

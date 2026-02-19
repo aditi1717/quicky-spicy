@@ -1,96 +1,93 @@
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import { 
-  ArrowLeft
-} from "lucide-react"
+import { useState, useEffect } from "react"
+import { ArrowLeft, Loader2 } from "lucide-react"
+import { publicAPI } from "@/lib/api"
 
 export default function PrivacyPolicy() {
   const navigate = useNavigate()
+  const [loading, setLoading] = useState(true)
+  const [content, setContent] = useState("")
+  const [lastUpdated, setLastUpdated] = useState("")
 
-  const sections = [
-    {
-      title: "1. Information We Collect",
-      content: "We collect information you provide directly to us, such as when you create an account, place an order, or contact us. This includes your name, email address, phone number, delivery address, and payment information."
-    },
-    {
-      title: "2. How We Use Your Information",
-      content: "We use the information we collect to provide, maintain, and improve our services, process transactions, send you updates, and respond to your inquiries."
-    },
-    {
-      title: "3. Information Sharing",
-      content: "We do not sell your personal information. We may share your information with restaurants and delivery partners to fulfill your orders, and with service providers who assist us in operating our platform."
-    },
-    {
-      title: "4. Location Information",
-      content: "We collect location information to provide delivery services, estimate delivery times, and improve our services. You can control location permissions through your device settings."
-    },
-    {
-      title: "5. Data Security",
-      content: "We implement appropriate security measures to protect your personal information. However, no method of transmission over the internet is 100% secure."
-    },
-    {
-      title: "6. Your Rights",
-      content: "You have the right to access, update, or delete your personal information. You can also opt-out of certain communications from us."
-    },
-    {
-      title: "7. Cookies and Tracking",
-      content: "We use cookies and similar tracking technologies to track activity on our service and hold certain information to improve user experience."
-    },
-    {
-      title: "8. Children's Privacy",
-      content: "Our service is not intended for children under 13. We do not knowingly collect personal information from children under 13."
-    },
-    {
-      title: "9. Changes to This Policy",
-      content: "We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page."
-    },
-    {
-      title: "10. Contact Us",
-      content: "If you have any questions about this Privacy Policy, please contact us at privacy@appzetofood.com"
+  useEffect(() => {
+    const fetchPrivacy = async () => {
+      try {
+        const response = await publicAPI.getPrivacy()
+        if (response.data.success) {
+          setContent(response.data.data.content)
+          setLastUpdated(response.data.data.updatedAt)
+        }
+      } catch (error) {
+        console.error("Error fetching privacy policy:", error)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+
+    fetchPrivacy()
+  }, [])
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "January 1, 2024"
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
 
   return (
-    <div className="min-h-screen bg-[#f6e9dc] overflow-x-hidden">
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0a] overflow-x-hidden">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4 md:py-3 flex items-center gap-4 rounded-b-3xl md:rounded-b-none">
-        <button 
-          onClick={() => navigate("/delivery/profile")}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+      <div className="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 px-4 py-4 md:py-3 flex items-center gap-4 sticky top-0 z-10 shadow-sm">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
         >
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+          <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
         </button>
-        <h1 className="text-lg md:text-xl font-bold text-gray-900">Privacy Policy</h1>
+        <h1 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">Privacy Policy</h1>
       </div>
 
       {/* Main Content */}
-      <div className="w-full px-4 py-6 pb-24 md:pb-6">
-        <div className="w-full max-w-none">
-          <p className="text-gray-600 text-sm md:text-base mb-6">
-            Last updated: January 1, 2024
-          </p>
-          
-          <div className="space-y-6">
-            {sections.map((section, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-              >
-                <h3 className="text-gray-900 font-bold text-base md:text-lg mb-2">
-                  {section.title}
-                </h3>
-                <p className="text-gray-600 text-sm md:text-base leading-relaxed">
-                  {section.content}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+      <div className="w-full px-5 py-6 pb-24 md:pb-12">
+        <div className="max-w-4xl mx-auto">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 text-[#E23744] animate-spin mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">Loading policy...</p>
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+            >
+              <div
+                className="prose prose-sm sm:prose prose-orange dark:prose-invert max-w-none 
+                  text-gray-700 dark:text-gray-300 leading-relaxed
+                  [&>p]:mb-4 [&>h1]:text-xl [&>h1]:font-bold [&>h1]:mt-6 [&>h1]:mb-3
+                  [&>h2]:text-lg [&>h2]:font-bold [&>h2]:mt-5 [&>h2]:mb-2
+                  [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>li]:mb-1"
+                dangerouslySetInnerHTML={{ __html: content }}
+              />
+
+              {!content ? (
+                <div className="text-center py-10">
+                  <p className="text-gray-500">No privacy policy found.</p>
+                </div>
+              ) : (
+                <div className="mt-12 pt-6 border-t border-gray-100 dark:border-zinc-800">
+                  <p className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm italic">
+                    Last updated: {formatDate(lastUpdated)}
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          )}
         </div>
       </div>
-
     </div>
   )
 }
-

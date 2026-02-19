@@ -1,88 +1,93 @@
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import { 
-  ArrowLeft
-} from "lucide-react"
+import { useState, useEffect } from "react"
+import { ArrowLeft, Loader2 } from "lucide-react"
+import { publicAPI } from "@/lib/api"
 
 export default function TermsAndConditions() {
   const navigate = useNavigate()
+  const [loading, setLoading] = useState(true)
+  const [content, setContent] = useState("")
+  const [lastUpdated, setLastUpdated] = useState("")
 
-  const sections = [
-    {
-      title: "1. Acceptance of Terms",
-      content: "By accessing and using this delivery service, you accept and agree to be bound by the terms and provision of this agreement."
-    },
-    {
-      title: "2. Service Description",
-      content: "We provide food delivery services connecting customers with restaurants. We act as an intermediary between you and the restaurant."
-    },
-    {
-      title: "3. User Responsibilities",
-      content: "You are responsible for maintaining the confidentiality of your account and password. You agree to accept responsibility for all activities that occur under your account."
-    },
-    {
-      title: "4. Payment Terms",
-      content: "Payment for orders must be made at the time of delivery or through the app. We accept cash, credit cards, and other payment methods as specified."
-    },
-    {
-      title: "5. Delivery Terms",
-      content: "Delivery times are estimates and not guaranteed. We are not responsible for delays due to weather, traffic, or other circumstances beyond our control."
-    },
-    {
-      title: "6. Cancellation Policy",
-      content: "Orders can be cancelled within 5 minutes of placement. After this time, cancellation may not be possible if the restaurant has started preparation."
-    },
-    {
-      title: "7. Limitation of Liability",
-      content: "We shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of the service."
-    },
-    {
-      title: "8. Changes to Terms",
-      content: "We reserve the right to modify these terms at any time. Continued use of the service after changes constitutes acceptance of the new terms."
+  useEffect(() => {
+    const fetchTerms = async () => {
+      try {
+        const response = await publicAPI.getTerms()
+        if (response.data.success) {
+          setContent(response.data.data.content)
+          setLastUpdated(response.data.data.updatedAt)
+        }
+      } catch (error) {
+        console.error("Error fetching terms:", error)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+
+    fetchTerms()
+  }, [])
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "January 1, 2024"
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
 
   return (
-    <div className="min-h-screen bg-[#f6e9dc] overflow-x-hidden">
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0a] overflow-x-hidden">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4 md:py-3 flex items-center gap-4 rounded-b-3xl md:rounded-b-none">
-        <button 
-          onClick={() => navigate("/delivery/profile")}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+      <div className="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 px-4 py-4 md:py-3 flex items-center gap-4 sticky top-0 z-10 shadow-sm">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
         >
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+          <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
         </button>
-        <h1 className="text-lg md:text-xl font-bold text-gray-900">Terms and Conditions</h1>
+        <h1 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">Terms and Conditions</h1>
       </div>
 
       {/* Main Content */}
-      <div className="w-full px-4 py-6 pb-24 md:pb-6">
-        <div className="w-full max-w-none">
-          <p className="text-gray-600 text-sm md:text-base mb-6">
-            Last updated: January 1, 2024
-          </p>
-          
-          <div className="space-y-6">
-            {sections.map((section, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-              >
-                <h3 className="text-gray-900 font-bold text-base md:text-lg mb-2">
-                  {section.title}
-                </h3>
-                <p className="text-gray-600 text-sm md:text-base leading-relaxed">
-                  {section.content}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+      <div className="w-full px-5 py-6 pb-24 md:pb-12">
+        <div className="max-w-4xl mx-auto">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 text-[#E23744] animate-spin mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">Loading terms...</p>
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+            >
+              <div
+                className="prose prose-sm sm:prose prose-orange dark:prose-invert max-w-none 
+                  text-gray-700 dark:text-gray-300 leading-relaxed
+                  [&>p]:mb-4 [&>h1]:text-xl [&>h1]:font-bold [&>h1]:mt-6 [&>h1]:mb-3
+                  [&>h2]:text-lg [&>h2]:font-bold [&>h2]:mt-5 [&>h2]:mb-2
+                  [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>li]:mb-1"
+                dangerouslySetInnerHTML={{ __html: content }}
+              />
+
+              {!content ? (
+                <div className="text-center py-10">
+                  <p className="text-gray-500">No terms and conditions found.</p>
+                </div>
+              ) : (
+                <div className="mt-12 pt-6 border-t border-gray-100 dark:border-zinc-800">
+                  <p className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm italic">
+                    Last updated: {formatDate(lastUpdated)}
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          )}
         </div>
       </div>
-
     </div>
   )
 }
-

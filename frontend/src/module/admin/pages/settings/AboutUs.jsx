@@ -40,6 +40,7 @@ const colorOptions = [
 ]
 
 export default function AboutUs() {
+  const companyName = useCompanyName()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [aboutData, setAboutData] = useState({
@@ -109,9 +110,9 @@ export default function AboutUs() {
         ...aboutData,
         features: aboutData.features.filter((_, i) => i !== index)
       }
-      
+
       setAboutData(updatedData)
-      
+
       // Save to backend immediately
       setSaving(true)
       const response = await api.put(API_ENDPOINTS.ADMIN.ABOUT, updatedData)
@@ -133,7 +134,7 @@ export default function AboutUs() {
     setAboutData(prev => {
       const newFeatures = [...prev.features]
       newFeatures[index] = { ...newFeatures[index], [field]: value }
-      
+
       // Update bgColor when color changes
       if (field === 'color') {
         const colorOption = colorOptions.find(opt => opt.value === value)
@@ -141,7 +142,7 @@ export default function AboutUs() {
           newFeatures[index].bgColor = colorOption.bg
         }
       }
-      
+
       return { ...prev, features: newFeatures }
     })
   }
@@ -199,7 +200,7 @@ export default function AboutUs() {
                 onChange={(e) => setAboutData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Your trusted food delivery partner..."
                 rows={4}
-                className="mt-1"
+                className="mt-1 w-full"
               />
             </div>
             <div>
@@ -287,7 +288,8 @@ export default function AboutUs() {
                             value={feature.description}
                             onChange={(e) => updateFeature(index, 'description', e.target.value)}
                             placeholder="Feature description"
-                            rows={2}
+                            rows={4}
+                            className="w-full"
                           />
                         </div>
                       </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { Phone, User, AlertCircle, Loader2, Truck } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -61,14 +61,35 @@ export default function DeliverySignup() {
     }
   }, [navigate])
 
+  // Pre-fill form from sessionStorage if data exists (e.g., when coming back from OTP)
+  useEffect(() => {
+    const stored = sessionStorage.getItem("deliveryAuthData")
+    if (stored) {
+      try {
+        const data = JSON.parse(stored)
+        if (data.phone) {
+          // Extract digits after +91
+          const phoneDigits = data.phone.replace("+91", "").trim()
+          setFormData(prev => ({
+            ...prev,
+            phone: phoneDigits,
+            name: data.name || prev.name
+          }))
+        }
+      } catch (err) {
+        console.error("Error parsing stored auth data:", err)
+      }
+    }
+  }, [])
+
   const validatePhone = (phone) => {
     if (!phone.trim()) {
       return "Phone number is required"
     }
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, "")
-    const phoneRegex = /^\d{7,15}$/
+    const phoneRegex = /^\d{10}$/
     if (!phoneRegex.test(cleanPhone)) {
-      return "Phone number must be 7-15 digits"
+      return "Phone number must be exactly 10 digits"
     }
     return ""
   }
@@ -91,7 +112,13 @@ export default function DeliverySignup() {
   }
 
   const handleChange = (e) => {
-    const { name, value } = e.target
+    let { name, value } = e.target
+
+    // Only allow numbers for phone field and limit to 10 digits
+    if (name === "phone") {
+      value = value.replace(/\D/g, "").slice(0, 10)
+    }
+
     setFormData({
       ...formData,
       [name]: value,
@@ -258,24 +285,12 @@ export default function DeliverySignup() {
                 Phone Number
               </Label>
               <div className="flex gap-2">
-                <Select
-                  value={formData.countryCode}
-                  onValueChange={handleCountryCodeChange}
-                >
-                  <SelectTrigger className="w-20 sm:w-24 md:w-[100px] text-xs sm:text-sm">
-                    <SelectValue placeholder="Code" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {countryCodes.map((country) => (
-                      <SelectItem key={country.code} value={country.code}>
-                        <span className="flex items-center gap-2 text-xs sm:text-sm">
-                          <span>{country.flag}</span>
-                          <span>{country.code}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center px-4 h-11 border border-gray-300 bg-gray-50 text-gray-700 rounded-md shrink-0">
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    <span>🇮🇳</span>
+                    <span>+91</span>
+                  </span>
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="relative">
                     <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
@@ -285,7 +300,9 @@ export default function DeliverySignup() {
                       id="phone"
                       name="phone"
                       type="tel"
-                      placeholder="Enter phone number"
+                      inputMode="numeric"
+                      maxLength={10}
+                      placeholder="Enter 10-digit number"
                       value={formData.phone}
                       onChange={handleChange}
                       className={`h-11 pl-9 border-gray-300 rounded-md shadow-sm focus-visible:ring-primary-orange focus-visible:ring-2 transition-colors placeholder:text-gray-400 ${errors.phone ? "border-red-500" : ""}`}
@@ -319,16 +336,22 @@ export default function DeliverySignup() {
             </Button>
           </form>
 
-          {/* Login link */}
-          <div className="mt-6 text-center text-sm">
-            <span className="text-gray-600">Already have an account? </span>
-            <button
-              type="button"
-              onClick={() => navigate("/delivery/sign-in")}
-              className="text-primary-orange hover:underline font-medium"
-            >
-              Login
-            </button>
+          <div className="mt-6 text-center text-sm space-y-2">
+            <p>
+              <span className="text-gray-600">Already have an account? </span>
+              <Link
+                to="/delivery/sign-in"
+                className="text-primary-orange hover:underline font-medium"
+              >
+                Login
+              </Link>
+            </p>
+            <p className="text-xs text-gray-500">
+              By continuing, you agree to our{" "}
+              <Link to="/delivery/terms" className="text-primary-orange hover:underline">
+                Terms and Conditions
+              </Link>
+            </p>
           </div>
 
           {/* Demo credentials / info bar */}
