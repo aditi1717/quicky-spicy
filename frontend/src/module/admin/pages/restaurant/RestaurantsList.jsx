@@ -692,8 +692,8 @@ export default function RestaurantsList() {
                             <button
                               onClick={() => handleBanRestaurant(restaurant)}
                               className={`p-1.5 rounded transition-colors ${!restaurant.status
-                                  ? "text-green-600 hover:bg-green-50"
-                                  : "text-red-600 hover:bg-red-50"
+                                ? "text-green-600 hover:bg-green-50"
+                                : "text-red-600 hover:bg-red-50"
                                 }`}
                               title={!restaurant.status ? "Unban Restaurant" : "Ban Restaurant"}
                             >
@@ -720,91 +720,122 @@ export default function RestaurantsList() {
 
       {/* Restaurant Details Modal */}
       {selectedRestaurant && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={closeDetailsModal}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-slate-900/10 backdrop-blur-md z-[100] flex items-center justify-center p-4 lg:p-8 transition-all duration-300"
+          onClick={closeDetailsModal}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] border border-slate-200/60 max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-400"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-slate-900">Restaurant Details</h2>
+            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">Restaurant Details</h2>
+                <p className="text-sm text-slate-500 mt-1">Detailed overview and information</p>
+              </div>
               <button
                 onClick={closeDetailsModal}
-                className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all duration-200 bg-slate-50"
               >
-                <X className="w-5 h-5 text-slate-600" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-6">
+            {/* Modal Content - Scrollable area */}
+            <div className="p-8 overflow-y-auto">
               {loadingDetails && (
-                <div className="flex items-center justify-center py-20">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                  <span className="ml-3 text-slate-600">Loading details...</span>
+                <div className="flex flex-col items-center justify-center py-24">
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full border-4 border-slate-100"></div>
+                    <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+                  </div>
+                  <span className="mt-4 text-slate-500 font-medium tracking-wide">Fetching restaurant data...</span>
                 </div>
               )}
               {!loadingDetails && (restaurantDetails || selectedRestaurant) && (
-                <div className="space-y-6">
+                <div className="space-y-10">
                   {/* Restaurant Basic Info */}
-                  <div className="flex items-start gap-6 pb-6 border-b border-slate-200">
-                    <div className="w-24 h-24 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
+                  <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+                    <div className="w-32 h-32 rounded-3xl overflow-hidden bg-slate-50 flex-shrink-0 shadow-inner group">
                       <img
-                        src={restaurantDetails?.profileImage?.url || restaurantDetails?.logo || selectedRestaurant?.logo || selectedRestaurant?.originalData?.profileImage?.url || "https://via.placeholder.com/96"}
+                        src={restaurantDetails?.profileImage?.url || restaurantDetails?.logo || selectedRestaurant?.logo || selectedRestaurant?.originalData?.profileImage?.url || "https://via.placeholder.com/128"}
                         alt={restaurantDetails?.name || selectedRestaurant?.name || "Restaurant"}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         onError={(e) => {
-                          e.target.src = "https://via.placeholder.com/96"
+                          e.target.src = "https://via.placeholder.com/128"
                         }}
                       />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-bold text-slate-900 mb-2">
-                        {restaurantDetails?.name || selectedRestaurant?.name || "N/A"}
-                      </h3>
-                      <div className="flex items-center gap-4 flex-wrap">
+                    <div className="flex-1 text-center md:text-left pt-2">
+                      <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
+                        <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                          {restaurantDetails?.name || selectedRestaurant?.name || "N/A"}
+                        </h3>
+                        <div className="flex items-center justify-center md:justify-start gap-2">
+                          <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${restaurantDetails?.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {restaurantDetails?.isActive !== false ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-center md:justify-start gap-6 flex-wrap">
                         {(restaurantDetails?.ratings?.average || selectedRestaurant?.originalData?.ratings?.average) && (
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                            <span className="text-sm font-medium text-slate-700">
-                              {(restaurantDetails?.ratings?.average || selectedRestaurant?.originalData?.ratings?.average || 0).toFixed(1)} ({(restaurantDetails?.ratings?.count || selectedRestaurant?.originalData?.ratings?.count || 0)} reviews)
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-50 rounded-xl">
+                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-500" />
+                            <span className="text-sm font-bold text-yellow-700">
+                              {(restaurantDetails?.ratings?.average || selectedRestaurant?.originalData?.ratings?.average || 0).toFixed(1)}
+                            </span>
+                            <span className="text-xs text-yellow-600/70 ml-1 font-medium">
+                              ({(restaurantDetails?.ratings?.count || selectedRestaurant?.originalData?.ratings?.count || 0)} reviews)
                             </span>
                           </div>
                         )}
-                        <div className="flex items-center gap-1 text-slate-600">
+                        <div className="flex items-center gap-2 text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
                           <Building2 className="w-4 h-4" />
-                          <span className="text-sm">{formatRestaurantId(restaurantDetails?.restaurantId || restaurantDetails?._id || selectedRestaurant?.id || selectedRestaurant?._id)}</span>
+                          <span className="text-xs font-bold tracking-wider">{formatRestaurantId(restaurantDetails?.restaurantId || restaurantDetails?._id || selectedRestaurant?.id || selectedRestaurant?._id)}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Owner Information */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="text-lg font-semibold text-slate-900 mb-4">Owner Information</h4>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <User className="w-5 h-5 text-slate-400" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                    {/* Owner Information */}
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                        <User className="w-4 h-4 text-blue-600" />
+                        <h4 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Owner Information</h4>
+                      </div>
+                      <div className="space-y-4">
+                        <div className="flex items-start gap-4 p-4 rounded-2xl bg-blue-50/30 border border-blue-100/30">
+                          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                            <User className="w-5 h-5 text-blue-600" />
+                          </div>
                           <div>
-                            <p className="text-xs text-slate-500">Owner Name</p>
-                            <p className="text-sm font-medium text-slate-900">
+                            <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-0.5">Full Name</p>
+                            <p className="text-base font-bold text-slate-800">
                               {restaurantDetails?.ownerName || selectedRestaurant?.ownerName || selectedRestaurant?.originalData?.ownerName || "N/A"}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <Phone className="w-5 h-5 text-slate-400" />
+                        <div className="flex items-start gap-4 p-4 rounded-2xl bg-emerald-50/30 border border-emerald-100/30">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                            <Phone className="w-5 h-5 text-emerald-600" />
+                          </div>
                           <div>
-                            <p className="text-xs text-slate-500">Phone</p>
-                            <p className="text-sm font-medium text-slate-900">
+                            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mb-0.5">Contact Number</p>
+                            <p className="text-base font-bold text-slate-800">
                               {restaurantDetails?.ownerPhone || restaurantDetails?.phone || selectedRestaurant?.ownerPhone || selectedRestaurant?.originalData?.ownerPhone || selectedRestaurant?.originalData?.phone || "N/A"}
                             </p>
                           </div>
                         </div>
                         {restaurantDetails?.ownerEmail && (
-                          <div className="flex items-center gap-3">
-                            <Mail className="w-5 h-5 text-slate-400" />
+                          <div className="flex items-start gap-4 p-4 rounded-2xl bg-indigo-50/30 border border-indigo-100/30">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
+                              <Mail className="w-5 h-5 text-indigo-600" />
+                            </div>
                             <div>
-                              <p className="text-xs text-slate-500">Email</p>
-                              <p className="text-sm font-medium text-slate-900">{restaurantDetails.ownerEmail}</p>
+                              <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider mb-0.5">Email Address</p>
+                              <p className="text-base font-bold text-slate-800">{restaurantDetails.ownerEmail}</p>
                             </div>
                           </div>
                         )}
@@ -1401,8 +1432,8 @@ export default function RestaurantsList() {
                   onClick={confirmBanRestaurant}
                   disabled={banning}
                   className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${banConfirmDialog.action === 'ban'
-                      ? 'bg-red-600 hover:bg-red-700'
-                      : 'bg-green-600 hover:bg-green-700'
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : 'bg-green-600 hover:bg-green-700'
                     }`}
                 >
                   {banning ? (
