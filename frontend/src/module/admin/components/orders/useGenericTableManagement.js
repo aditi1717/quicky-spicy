@@ -142,7 +142,7 @@ export function useGenericTableManagement(data, title, searchFields = []) {
       if (order.items && Array.isArray(order.items) && order.items.length > 0) {
         const tableData = order.items.map((item) => [
           item.quantity || 1,
-          item.name || 'Unknown Item',
+          item.name || item.itemName || item.title || 'Unknown Item',
           `₹${(item.price || 0).toFixed(2)}`,
           `₹${((item.quantity || 1) * (item.price || 0)).toFixed(2)}`
         ])
@@ -252,4 +252,3 @@ export function useGenericTableManagement(data, title, searchFields = []) {
     resetColumns,
   }
 }
-

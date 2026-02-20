@@ -533,8 +533,8 @@ console.log(
 
 // Review Management
 router.get("/reviews", getAllReviews);
-router.get("/reviews/:orderId", getReviewByOrderId);
 router.get("/reviews/restaurant/:restaurantId", getReviewsByRestaurant);
+router.get("/reviews/:orderId", getReviewByOrderId);
 
 // Get order by ID (must be last to avoid matching other routes)
 router.get("/orders/:id", getOrderById);

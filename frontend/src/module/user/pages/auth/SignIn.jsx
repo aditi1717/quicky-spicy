@@ -4,7 +4,6 @@ import { Mail, Phone, AlertCircle, Loader2 } from "lucide-react"
 import AnimatedPage from "../../components/AnimatedPage"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -52,7 +51,6 @@ export default function SignIn() {
     countryCode: "+91",
     email: "",
     name: "",
-    rememberMe: false,
   })
   const [errors, setErrors] = useState({
     phone: "",
@@ -660,7 +658,7 @@ export default function SignIn() {
     const newMode = isSignUp ? "signin" : "signup"
     navigate(`/user/auth/sign-in?mode=${newMode}`, { replace: true })
     // Reset form
-    setFormData({ phone: "", countryCode: "+91", email: "", name: "", rememberMe: false })
+    setFormData({ phone: "", countryCode: "+91", email: "", name: "" })
     setErrors({ phone: "", email: "", name: "" })
   }
 
@@ -804,24 +802,6 @@ export default function SignIn() {
                 </button>
               </div>
             )}
-
-            {/* Remember Me Checkbox */}
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="rememberMe"
-                checked={formData.rememberMe}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, rememberMe: checked })
-                }
-                className="w-4 h-4 border-2 border-gray-300 rounded data-[state=checked]:bg-[#EB590E] data-[state=checked]:border-[#EB590E] flex items-center justify-center"
-              />
-              <label
-                htmlFor="rememberMe"
-                className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none"
-              >
-                Remember my login for faster sign-in
-              </label>
-            </div>
 
             {/* Continue Button */}
             <Button

@@ -903,7 +903,18 @@ export const getUsers = asyncHandler(async (req, res) => {
         $group: {
           _id: "$userId",
           totalOrders: { $sum: 1 },
-          totalAmount: { $sum: "$pricing.total" },
+          totalAmount: {
+            $sum: {
+              $convert: {
+                input: {
+                  $ifNull: ["$pricing.total", { $ifNull: ["$total", 0] }],
+                },
+                to: "double",
+                onError: 0,
+                onNull: 0,
+              },
+            },
+          },
         },
       },
     ]);
@@ -913,7 +924,7 @@ export const getUsers = asyncHandler(async (req, res) => {
     orderStats.forEach((stat) => {
       statsMap[stat._id.toString()] = {
         totalOrder: stat.totalOrders || 0,
-        totalOrderAmount: stat.totalAmount || 0,
+        totalOrderAmount: Number(stat.totalAmount || 0),
       };
     });
 
@@ -1006,7 +1017,18 @@ export const getUserById = asyncHandler(async (req, res) => {
         $group: {
           _id: null,
           totalOrders: { $sum: 1 },
-          totalAmount: { $sum: "$pricing.total" },
+          totalAmount: {
+            $sum: {
+              $convert: {
+                input: {
+                  $ifNull: ["$pricing.total", { $ifNull: ["$total", 0] }],
+                },
+                to: "double",
+                onError: 0,
+                onNull: 0,
+              },
+            },
+          },
           orders: {
             $push: {
               orderId: "$orderId",

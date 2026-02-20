@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Edit, Upload, Info } from "lucide-react"
 // Using placeholder for promotional banner
 const bannerPreview = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&h=400&fit=crop"
@@ -6,6 +6,20 @@ const bannerPreview = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5
 export default function PromotionalBanner() {
   const [activeLanguage, setActiveLanguage] = useState("default")
   const [title, setTitle] = useState("Promotional")
+  const [bannerImage, setBannerImage] = useState(bannerPreview)
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("admin_promotional_banner")
+      if (!saved) return
+      const parsed = JSON.parse(saved)
+      if (parsed?.title) setTitle(parsed.title)
+      if (parsed?.activeLanguage) setActiveLanguage(parsed.activeLanguage)
+      if (parsed?.bannerImage) setBannerImage(parsed.bannerImage)
+    } catch (error) {
+      console.error("Failed to load saved promotional banner:", error)
+    }
+  }, [])
 
   const languageTabs = [
     { key: "default", label: "Default" },
@@ -17,8 +31,31 @@ export default function PromotionalBanner() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log("Banner saved:", { title })
+    localStorage.setItem(
+      "admin_promotional_banner",
+      JSON.stringify({
+        title,
+        activeLanguage,
+        bannerImage,
+        updatedAt: new Date().toISOString(),
+      }),
+    )
     alert("Promotional banner saved successfully!")
+  }
+
+  const handleBannerUpload = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image size must be 2MB or less")
+      event.target.value = ""
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => setBannerImage(String(reader.result || bannerPreview))
+    reader.readAsDataURL(file)
   }
 
   return (
@@ -79,7 +116,7 @@ export default function PromotionalBanner() {
                   </div>
                   <div className="absolute right-0 top-0 bottom-0 w-1/2">
                     <img
-                      src={bannerPreview}
+                      src={bannerImage}
                       alt="Banner preview"
                       className="w-full h-full object-cover"
                       onError={(e) => {
@@ -98,11 +135,12 @@ export default function PromotionalBanner() {
 
               {/* Upload Button */}
               <div className="mt-4">
-                <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer">
+                <label className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer block">
                   <Upload className="w-12 h-12 text-slate-400 mx-auto mb-3" />
                   <p className="text-sm font-medium text-blue-600 mb-1">Click to upload</p>
                   <p className="text-xs text-slate-500">Or drag and drop</p>
-                </div>
+                  <input type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" />
+                </label>
               </div>
             </div>
 

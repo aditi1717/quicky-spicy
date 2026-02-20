@@ -53,13 +53,18 @@ export function useOrdersManagement(orders, statusKey, title) {
 
     // Apply filters
     if (filters.paymentStatus) {
-      result = result.filter(order =>
-        order.paymentStatus?.toLowerCase() === filters.paymentStatus.toLowerCase()
-      )
+      const wanted = filters.paymentStatus.toLowerCase()
+      result = result.filter((order) => {
+        const paymentStatus = String(order.paymentStatus || "").toLowerCase()
+        const collectionStatus = String(order.paymentCollectionStatus || "").toLowerCase()
+        return paymentStatus === wanted || collectionStatus === wanted
+      })
     }
 
     if (filters.deliveryType) {
-      result = result.filter(order => order.deliveryType === filters.deliveryType)
+      result = result.filter(
+        (order) => String(order.deliveryType || "").toLowerCase() === filters.deliveryType.toLowerCase(),
+      )
     }
 
     if (filters.minAmount) {
@@ -232,7 +237,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       if (order.items && Array.isArray(order.items) && order.items.length > 0) {
         const tableData = order.items.map((item) => [
           item.quantity || 1,
-          item.name || 'Unknown Item',
+          item.name || item.itemName || item.title || 'Unknown Item',
           `₹${(item.price || 0).toFixed(2)}`,
           `₹${((item.quantity || 1) * (item.price || 0)).toFixed(2)}`
         ])
@@ -355,4 +360,3 @@ export function useOrdersManagement(orders, statusKey, title) {
     resetColumns,
   }
 }
-

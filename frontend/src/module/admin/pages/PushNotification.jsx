@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef } from "react"
 import { Search, Download, ChevronDown, Bell, Edit, Trash2, Upload, Settings, Image as ImageIcon } from "lucide-react"
 import { pushNotificationsDummy } from "../data/pushNotificationsDummy"
 // Using placeholders for notification images
@@ -13,12 +13,14 @@ const notificationImages = {
 }
 
 export default function PushNotification() {
+  const fileInputRef = useRef(null)
   const [formData, setFormData] = useState({
     title: "",
     zone: "All",
     sendTo: "Customer",
     description: "",
   })
+  const [bannerPreview, setBannerPreview] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [notifications, setNotifications] = useState(pushNotificationsDummy)
 
@@ -40,8 +42,29 @@ export default function PushNotification() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log("Notification sent:", formData)
-    alert("Notification sent successfully!")
+    if (!formData.title.trim() || !formData.description.trim()) {
+      alert("Title and description are required")
+      return
+    }
+
+    const nextSl =
+      notifications.length > 0
+        ? Math.max(...notifications.map((n) => Number(n.sl) || 0)) + 1
+        : 1
+
+    const newNotification = {
+      sl: nextSl,
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      zone: formData.zone,
+      target: formData.sendTo,
+      status: true,
+      image: Boolean(bannerPreview),
+      imageUrl: bannerPreview || null,
+    }
+
+    setNotifications((prev) => [newNotification, ...prev])
+    handleReset()
   }
 
   const handleReset = () => {
@@ -51,6 +74,27 @@ export default function PushNotification() {
       sendTo: "Customer",
       description: "",
     })
+    setBannerPreview("")
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  const handleBannerSelect = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image size must be 2MB or less")
+      event.target.value = ""
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      setBannerPreview(String(reader.result || ""))
+    }
+    reader.readAsDataURL(file)
   }
 
   const handleToggleStatus = (sl) => {
@@ -126,11 +170,26 @@ export default function PushNotification() {
               <label className="block text-sm font-semibold text-slate-700 mb-3">
                 Notification banner
               </label>
-              <div className="border-2 border-dashed border-slate-300 rounded-lg p-12 text-center hover:border-blue-500 transition-colors cursor-pointer">
+              <div
+                className="border-2 border-dashed border-slate-300 rounded-lg p-12 text-center hover:border-blue-500 transition-colors cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
                 <Upload className="w-12 h-12 text-slate-400 mx-auto mb-3" />
                 <p className="text-sm font-medium text-blue-600 mb-1">Upload Image</p>
                 <p className="text-xs text-slate-500">Image format - jpg png jpeg gif webp Image Size -maximum size 2 MB Image Ratio - 3:1</p>
+                {bannerPreview && (
+                  <div className="mt-4">
+                    <img src={bannerPreview} alt="Notification banner preview" className="mx-auto h-20 rounded-lg object-cover" />
+                  </div>
+                )}
               </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleBannerSelect}
+                className="hidden"
+              />
             </div>
 
             {/* Description */}
@@ -234,7 +293,7 @@ export default function PushNotification() {
                       {notification.image ? (
                         <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100">
                           <img
-                            src={notificationImages[notification.sl] || notificationImage1}
+                            src={notification.imageUrl || notificationImages[notification.sl] || notificationImage1}
                             alt={notification.title}
                             className="w-full h-full object-cover"
                             onError={(e) => {

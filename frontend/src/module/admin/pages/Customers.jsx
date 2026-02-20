@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react"
-import { Search, Download, ChevronDown, Calendar, Eye, FileDown, FileSpreadsheet, FileText, X, Mail, Phone, MapPin, Package, DollarSign, Calendar as CalendarIcon, User, CheckCircle, XCircle } from "lucide-react"
+import { Search, Download, ChevronDown, Calendar, Eye, FileDown, FileSpreadsheet, FileText, X, Mail, Phone, MapPin, Package, IndianRupee, Calendar as CalendarIcon, User, CheckCircle, XCircle } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { exportCustomersToCSV, exportCustomersToExcel, exportCustomersToPDF } from "../components/customers/customersExportUtils"
 import { adminAPI } from "@/lib/api"
@@ -25,7 +25,7 @@ export default function Customers() {
 
   const filteredCustomers = useMemo(() => {
     let result = [...customers]
-    
+
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
@@ -99,7 +99,7 @@ export default function Customers() {
 
         const response = await adminAPI.getUsers(params)
         const data = response?.data?.data || response?.data
-        
+
         if (data?.users) {
           setCustomers(data.users)
           setTotalCustomers(data.total || data.users.length)
@@ -118,6 +118,11 @@ export default function Customers() {
     }
 
     fetchCustomers()
+
+    // Keep totals dynamic without requiring full page reload.
+    const intervalId = setInterval(fetchCustomers, 30000)
+
+    return () => clearInterval(intervalId)
   }, [searchQuery, filters.status, filters.joiningDate, filters.sortBy])
 
   const handleToggleStatus = async (customerId) => {
@@ -154,7 +159,7 @@ export default function Customers() {
 
       const response = await adminAPI.getUserById(customerId)
       const data = response?.data?.data || response?.data
-      
+
       if (data?.user) {
         setUserDetails(data.user)
       } else {
@@ -285,7 +290,7 @@ export default function Customers() {
 
           <div className="mt-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button 
+              <button
                 onClick={() => {
                   // Filters are applied automatically via useMemo
                 }}
@@ -393,10 +398,10 @@ export default function Customers() {
                     </td>
                   </tr>
                 ) : (
-                  filteredCustomers.map((customer) => (
+                  filteredCustomers.map((customer, index) => (
                     <tr key={customer.id || customer.sl} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-slate-700">{customer.sl}</span>
+                        <span className="text-sm font-medium text-slate-700">{index + 1}</span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -416,7 +421,7 @@ export default function Customers() {
                         <span className="text-sm text-slate-700">{customer.totalOrder || 0}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-slate-900">$ {(customer.totalOrderAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="text-sm font-medium text-slate-900">₹ {(customer.totalOrderAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm text-slate-700">{customer.joiningDate}</span>
@@ -424,19 +429,17 @@ export default function Customers() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() => handleToggleStatus(customer.id || customer.sl)}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                            customer.status ? "bg-blue-600" : "bg-slate-300"
-                          }`}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${customer.status ? "bg-blue-600" : "bg-slate-300"
+                            }`}
                         >
                           <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              customer.status ? "translate-x-6" : "translate-x-1"
-                            }`}
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${customer.status ? "translate-x-6" : "translate-x-1"
+                              }`}
                           />
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <button 
+                        <button
                           onClick={() => handleViewDetails(customer.id || customer.sl)}
                           className="p-1.5 rounded text-blue-600 hover:bg-blue-50 transition-colors"
                         >
@@ -458,7 +461,7 @@ export default function Customers() {
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-slate-900">User Details</DialogTitle>
           </DialogHeader>
-          
+
           {loadingDetails ? (
             <div className="py-8 text-center">
               <div className="text-sm text-slate-500">Loading user details...</div>
@@ -526,11 +529,11 @@ export default function Customers() {
                 </div>
                 <div className="bg-green-50 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <DollarSign className="w-4 h-4 text-green-600" />
+                    <IndianRupee className="w-4 h-4 text-green-600" />
                     <span className="text-xs font-semibold text-slate-700">Total Spent</span>
                   </div>
                   <p className="text-xl font-bold text-green-600">
-                    ${(userDetails.totalOrderAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₹{(userDetails.totalOrderAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
                 <div className="bg-purple-50 rounded-lg p-3">
@@ -588,7 +591,7 @@ export default function Customers() {
                           <p className="text-xs text-slate-600">{order.restaurantName}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-semibold text-slate-900">${(order.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                          <p className="text-sm font-semibold text-slate-900">₹{(order.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                           <p className="text-xs text-slate-600 capitalize">{order.status}</p>
                         </div>
                       </div>

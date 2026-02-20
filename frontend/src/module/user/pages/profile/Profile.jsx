@@ -214,6 +214,7 @@ export default function Profile() {
       localStorage.removeItem("user_authenticated")
       localStorage.removeItem("user_user")
       localStorage.removeItem("user")
+      localStorage.removeItem("cart")
 
       // Dispatch auth change event to notify other components
       window.dispatchEvent(new Event("userAuthChanged"))
@@ -232,6 +233,7 @@ export default function Profile() {
       localStorage.removeItem("user_authenticated")
       localStorage.removeItem("user_user")
       localStorage.removeItem("user")
+      localStorage.removeItem("cart")
       window.dispatchEvent(new Event("userAuthChanged"))
 
       // Still navigate to login page

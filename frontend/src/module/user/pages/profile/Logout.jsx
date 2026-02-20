@@ -41,6 +41,7 @@ export default function Logout() {
       localStorage.removeItem("accessToken")
       localStorage.removeItem("user_authenticated")
       localStorage.removeItem("user_user")
+      localStorage.removeItem("cart")
 
       // Clear sessionStorage
       sessionStorage.removeItem("userAuthData")
@@ -60,6 +61,7 @@ export default function Logout() {
       localStorage.removeItem("accessToken")
       localStorage.removeItem("user_authenticated")
       localStorage.removeItem("user_user")
+      localStorage.removeItem("cart")
       sessionStorage.removeItem("userAuthData")
       window.dispatchEvent(new Event("userAuthChanged"))
 
@@ -160,4 +162,3 @@ export default function Logout() {
     </AnimatedPage>
   )
 }
-

@@ -434,16 +434,7 @@ export default function OrdersPage({ statusKey = "all" }) {
     }
   }
 
-  const normalizedOrders = useMemo(() => {
-    if (statusKey !== "all") return orders
-
-    return orders.map((order) => {
-      if (order.status === "confirmed" && order.orderStatus === "Accepted") {
-        return { ...order, orderStatus: "Pending" }
-      }
-      return order
-    })
-  }, [orders, statusKey])
+  const normalizedOrders = useMemo(() => orders, [orders])
 
   const {
     searchQuery,

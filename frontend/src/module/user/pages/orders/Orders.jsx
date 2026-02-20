@@ -173,28 +173,61 @@ export default function Orders() {
 
   // Fetch orders from backend API
   useEffect(() => {
+    const FETCH_LIMIT = 100
+
+    const fetchAllOrders = async () => {
+      const firstResponse = await orderAPI.getOrders({
+        limit: FETCH_LIMIT,
+        page: 1,
+      })
+
+      // Check multiple possible response structures
+      let firstPageOrders = []
+      let totalPages = 1
+
+      if (firstResponse?.data?.success && firstResponse?.data?.data?.orders) {
+        firstPageOrders = firstResponse.data.data.orders || []
+        totalPages = firstResponse.data.data?.pagination?.pages || 1
+      } else if (firstResponse?.data?.orders) {
+        firstPageOrders = firstResponse.data.orders || []
+        totalPages = firstResponse.data?.pagination?.pages || 1
+      } else if (
+        firstResponse?.data?.data &&
+        Array.isArray(firstResponse.data.data)
+      ) {
+        firstPageOrders = firstResponse.data.data || []
+      }
+
+      if (totalPages <= 1) {
+        return firstPageOrders
+      }
+
+      const pagePromises = []
+      for (let p = 2; p <= totalPages; p += 1) {
+        pagePromises.push(orderAPI.getOrders({ limit: FETCH_LIMIT, page: p }))
+      }
+
+      const pageResponses = await Promise.all(pagePromises)
+      const remainingOrders = pageResponses.flatMap((resp) => {
+        if (resp?.data?.success && resp?.data?.data?.orders) {
+          return resp.data.data.orders || []
+        }
+        if (resp?.data?.orders) {
+          return resp.data.orders || []
+        }
+        if (resp?.data?.data && Array.isArray(resp.data.data)) {
+          return resp.data.data || []
+        }
+        return []
+      })
+
+      return [...firstPageOrders, ...remainingOrders]
+    }
+
     const fetchOrders = async () => {
       try {
         setLoading(true)
-
-        const response = await orderAPI.getOrders({
-          limit: 100, // Get all orders
-          page: 1
-        })
-
-        // Check multiple possible response structures
-        let ordersData = []
-
-        if (response?.data?.success && response?.data?.data?.orders) {
-          ordersData = response.data.data.orders || []
-        } else if (response?.data?.orders) {
-          ordersData = response.data.orders || []
-        } else if (response?.data?.data && Array.isArray(response.data.data)) {
-          ordersData = response.data.data || []
-        } else {
-          setOrders([])
-          return
-        }
+        const ordersData = await fetchAllOrders()
 
         if (ordersData.length > 0) {
           console.log('📦 Raw orders from API:', ordersData.slice(0, 3).map(o => ({

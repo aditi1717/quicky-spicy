@@ -209,7 +209,7 @@ export default function OrdersTable({
                               {item.quantity || 1}x
                             </span>
                             <span className="text-slate-800 font-medium flex-1">
-                              {item.name || 'Unknown Item'}
+                              {item.name || item.itemName || item.title || 'Unknown Item'}
                             </span>
                             {item.price && (
                               <span className="text-xs text-slate-500">
@@ -274,15 +274,16 @@ export default function OrdersTable({
                 )}
                 {(visibleColumns.paymentCollectionStatus !== false) && (
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {(() => {
-                      const isCod = order.paymentType === 'Cash on Delivery' || order.payment?.method === 'cash' || order.payment?.method === 'cod'
-                      const status = order.paymentCollectionStatus ?? (isCod ? 'Not Collected' : 'Collected')
-                      return (
-                        <span className={`text-sm font-medium ${status === 'Collected' ? 'text-emerald-600' : 'text-amber-600'}`}>
-                          {status}
+                    <div className="flex flex-col">
+                      <span className={`text-sm font-medium ${getPaymentStatusColor(order.paymentStatus)}`}>
+                        {order.paymentStatus || "Pending"}
+                      </span>
+                      {order.paymentCollectionStatus && (
+                        <span className="text-xs text-slate-500 mt-0.5">
+                          {order.paymentCollectionStatus}
                         </span>
-                      )
-                    })()}
+                      )}
+                    </div>
                   </td>
                 )}
                 {visibleColumns.orderStatus && (

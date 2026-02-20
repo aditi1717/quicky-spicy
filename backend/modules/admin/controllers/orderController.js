@@ -40,30 +40,43 @@ export const getOrders = asyncHandler(async (req, res) => {
         'food-on-the-way': 'out_for_delivery',
         'delivered': 'delivered',
         'canceled': 'cancelled',
-        'restaurant-cancelled': 'cancelled', // Restaurant cancelled orders
-        'payment-failed': 'pending', // Payment failed orders have pending status
-        'refunded': 'cancelled', // Refunded orders might be cancelled
+        'restaurant-cancelled': 'cancelled',
+        'payment-failed': 'failed',
+        'refunded': 'refunded',
         'dine-in': 'dine_in',
-        'offline-payments': 'pending' // Offline payment orders
+        'offline-payments': null
       };
       
       const mappedStatus = statusMap[status] || status;
-      query.status = mappedStatus;
+      if (mappedStatus) {
+        query.status = mappedStatus;
+      }
       
-      // If restaurant-cancelled, filter by cancellation reason
+      // Restaurant-cancelled should rely on explicit canceller when available.
       if (status === 'restaurant-cancelled') {
-        query.cancellationReason = { 
-          $regex: /rejected by restaurant|restaurant rejected|restaurant cancelled/i 
-        };
+        query.cancelledBy = 'restaurant';
+      }
+
+      // Payment failed should be filtered by payment status.
+      if (status === 'payment-failed') {
+        query['payment.status'] = 'failed';
+      }
+
+      // Refunded should be filtered by payment status.
+      if (status === 'refunded') {
+        query['payment.status'] = 'refunded';
+      }
+
+      // Offline payments should be based on payment method, not order status.
+      if (status === 'offline-payments') {
+        query['payment.method'] = { $in: ['cash', 'cod'] };
       }
     }
     
     // Also handle cancelledBy query parameter (if passed separately)
     if (cancelledBy === 'restaurant') {
       query.status = 'cancelled';
-      query.cancellationReason = { 
-        $regex: /rejected by restaurant|restaurant rejected|restaurant cancelled/i 
-      };
+      query.cancelledBy = 'restaurant';
     }
 
     // Payment status filter
@@ -227,13 +240,14 @@ export const getOrders = asyncHandler(async (req, res) => {
 
       // Map payment status
       const paymentStatusMap = {
-        'completed': 'Paid',
-        'pending': 'Pending',
-        'failed': 'Failed',
-        'refunded': 'Refunded',
-        'processing': 'Processing'
+        completed: 'Paid',
+        pending: 'Pending',
+        failed: 'Failed',
+        refunded: 'Refunded',
+        processing: 'Processing',
       };
-      const paymentStatusDisplay = paymentStatusMap[order.payment?.status] || 'Pending';
+      const rawPaymentStatus = String(order.payment?.status || '').toLowerCase();
+      const paymentStatusDisplay = paymentStatusMap[rawPaymentStatus] || 'Pending';
 
       // Map order status for display
       // Check if cancelled and determine who cancelled it
