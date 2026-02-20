@@ -223,6 +223,7 @@ export default function OrderTracking() {
   const [estimatedTime, setEstimatedTime] = useState(29)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [showOrderDetails, setShowOrderDetails] = useState(false)
   const [cancellationReason, setCancellationReason] = useState("")
   const [isCancelling, setIsCancelling] = useState(false)
   const [timerNow, setTimerNow] = useState(Date.now())
@@ -344,7 +345,12 @@ export default function OrderTracking() {
               } : order.restaurantLocation,
               deliveryPartnerId: apiOrder.deliveryPartnerId?._id || apiOrder.deliveryPartnerId || apiOrder.assignmentInfo?.deliveryPartnerId || null,
               assignmentInfo: apiOrder.assignmentInfo || null,
-              deliveryState: apiOrder.deliveryState || null
+              deliveryState: apiOrder.deliveryState || null,
+              createdAt: apiOrder.createdAt || null,
+              totalAmount: apiOrder.pricing?.total || apiOrder.totalAmount || 0,
+              deliveryFee: apiOrder.pricing?.deliveryFee || apiOrder.deliveryFee || 0,
+              gst: apiOrder.pricing?.gst || apiOrder.gst || 0,
+              paymentMethod: apiOrder.paymentMethod || null
             };
 
             setOrder(transformedOrder);
@@ -486,7 +492,12 @@ export default function OrderTracking() {
             deliveryPartnerId: apiOrder.deliveryPartnerId?._id || apiOrder.deliveryPartnerId || apiOrder.assignmentInfo?.deliveryPartnerId || null,
             assignmentInfo: apiOrder.assignmentInfo || null,
             tracking: apiOrder.tracking || {},
-            deliveryState: apiOrder.deliveryState || null
+            deliveryState: apiOrder.deliveryState || null,
+            createdAt: apiOrder.createdAt || null,
+            totalAmount: apiOrder.pricing?.total || apiOrder.totalAmount || 0,
+            deliveryFee: apiOrder.pricing?.deliveryFee || apiOrder.deliveryFee || 0,
+            gst: apiOrder.pricing?.gst || apiOrder.gst || 0,
+            paymentMethod: apiOrder.paymentMethod || null
           }
 
           setOrder(transformedOrder)
@@ -637,6 +648,26 @@ export default function OrderTracking() {
       toast.error(error.response?.data?.message || 'Failed to cancel order');
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `Track my order from ${order?.restaurant || 'Quick Spicy'}`,
+          text: `Hey! Track my order from ${order?.restaurant || 'Quick Spicy'} with ID #${order?.orderId || order?.id}.`,
+          url: window.location.href,
+        });
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("Tracking link copied to clipboard!");
+      }
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error('Error sharing:', error);
+        toast.error("Failed to share link");
+      }
     }
   };
 
@@ -863,8 +894,9 @@ export default function OrderTracking() {
           </Link>
           <h2 className="font-semibold text-lg">{order.restaurant}</h2>
           <motion.button
-            className="w-10 h-10 flex items-center justify-center"
+            className="w-10 h-10 flex items-center justify-center cursor-pointer"
             whileTap={{ scale: 0.9 }}
+            onClick={handleShare}
           >
             <Share2 className="w-5 h-5" />
           </motion.button>
@@ -1110,7 +1142,10 @@ export default function OrderTracking() {
           </div>
 
           {/* Order Items */}
-          <div className="p-4 border-b border-dashed border-gray-200">
+          <div
+            className="p-4 border-b border-dashed border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => setShowOrderDetails(true)}
+          >
             <div className="flex items-start gap-3">
               <Receipt className="w-5 h-5 text-gray-500 mt-0.5" />
               <div className="flex-1">
@@ -1202,6 +1237,111 @@ export default function OrderTracking() {
                 )}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Order Details Dialog */}
+      <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
+        <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md bg-white rounded-2xl p-0 overflow-hidden border-none outline-none">
+          <DialogHeader className="p-6 pb-4 border-b border-gray-100 pr-12">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl font-bold text-gray-900">Order Details</DialogTitle>
+            </div>
+          </DialogHeader>
+
+          <div className="p-6 pt-4 space-y-6 max-h-[70vh] overflow-y-auto">
+            {/* Order Meta Info */}
+            <div className="flex flex-col gap-1 b">
+              <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Order ID</p>
+              <p className="font-mono text-gray-900 font-semibold">#{order?.id || order?.orderId}</p>
+              <div className="flex items-center gap-4 mt-2">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider">Date & Time</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {order?.createdAt ? new Date(order.createdAt).toLocaleString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true
+                    }) : 'N/A'}
+                  </p>
+                </div>
+                <div className="h-8 w-px bg-gray-100" />
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider">Status</p>
+                  <span className="text-sm font-bold text-green-600 uppercase">
+                    {order?.status?.replace('_', ' ')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Items Section */}
+            <div>
+              <p className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Order Items</p>
+              <div className="space-y-4">
+                {order?.items?.map((item, index) => (
+                  <div key={index} className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3 flex-1">
+                      <div className="w-5 h-5 rounded border border-green-600 flex items-center justify-center mt-0.5 shrink-0">
+                        <div className="w-2.5 h-2.5 rounded-full bg-green-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900 leading-tight">{item.name}</p>
+                        <p className="text-sm text-gray-500 mt-0.5">Quantity: {item.quantity}</p>
+                      </div>
+                    </div>
+                    <p className="font-semibold text-gray-900">₹{item.price * item.quantity}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bill Summary */}
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-1">Bill Summary</p>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">Item Total</span>
+                <span className="text-gray-900 font-medium">₹{order?.totalAmount - (order?.deliveryFee || 0) - (order?.gst || 0)}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">Delivery Fee</span>
+                <span className="text-gray-900 font-medium">₹{order?.deliveryFee || 0}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">Taxes & Charges</span>
+                <span className="text-gray-900 font-medium">₹{order?.gst || 0}</span>
+              </div>
+              <div className="pt-2 border-t border-gray-200 flex justify-between items-center">
+                <span className="text-base font-bold text-gray-900">Total Amount</span>
+                <span className="text-lg font-bold text-gray-900">₹{order?.totalAmount}</span>
+              </div>
+            </div>
+
+            {/* Payment Method */}
+            {order?.paymentMethod && (
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Shield className="w-4 h-4" />
+                  <span className="text-sm font-medium">Payment Method</span>
+                </div>
+                <span className="text-sm font-bold text-gray-900 uppercase tracking-wide">
+                  {order.paymentMethod}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="p-6 border-t border-gray-100">
+            <Button
+              onClick={() => setShowOrderDetails(false)}
+              className="w-full bg-gray-900 text-white font-bold h-12 rounded-xl"
+            >
+              Okay
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
