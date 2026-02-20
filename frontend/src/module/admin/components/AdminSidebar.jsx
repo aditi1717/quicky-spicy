@@ -323,10 +323,25 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
   }, [expandedSections])
 
   const toggleSection = (sectionKey) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionKey]: !prev[sectionKey]
-    }))
+    setExpandedSections((prev) => {
+      const isCurrentlyOpen = Boolean(prev[sectionKey])
+
+      // Accordion behavior:
+      // 1) If current section is open -> close it.
+      // 2) If current section is closed -> open it and close all others.
+      if (isCurrentlyOpen) {
+        return {
+          ...prev,
+          [sectionKey]: false,
+        }
+      }
+
+      const next = {}
+      Object.keys(prev).forEach((key) => {
+        next[key] = key === sectionKey
+      })
+      return next
+    })
   }
 
   const renderMenuItem = (item, index, isInSection = false) => {
