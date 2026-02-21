@@ -48,6 +48,7 @@ export default function HubMenu() {
   const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false)
   const [editCategoryName, setEditCategoryName] = useState("")
   const [expandedGroups, setExpandedGroups] = useState(new Set())
+  const hasInitializedExpandedGroups = useRef(false)
   const [selectedFilter, setSelectedFilter] = useState(null)
   const [activeFilter, setActiveFilter] = useState(null) // Active filter for filtering menu
   const [availabilityReason, setAvailabilityReason] = useState(null)
@@ -620,12 +621,37 @@ export default function HubMenu() {
   //   }
   // }, [menuGroups, loadingMenu])
 
-  // Expand all groups by default on mount
+  // Expand all categories initially, then preserve manual open/close state.
+  // Also auto-expand only newly added categories.
   useEffect(() => {
-    if (expandedGroups.size === 0 && menuData.length > 0) {
-      setExpandedGroups(new Set(menuData.map(g => g.id)))
+    const groupIds = menuData.map((group) => group.id).filter(Boolean)
+
+    if (groupIds.length === 0) {
+      setExpandedGroups(new Set())
+      hasInitializedExpandedGroups.current = false
+      return
     }
-  }, [menuData, expandedGroups])
+
+    setExpandedGroups((prev) => {
+      const validIds = new Set(groupIds)
+      const next = new Set([...prev].filter((id) => validIds.has(id)))
+
+      if (!hasInitializedExpandedGroups.current) {
+        hasInitializedExpandedGroups.current = true
+        return new Set(groupIds)
+      }
+
+      let changed = next.size !== prev.size
+      groupIds.forEach((id) => {
+        if (!prev.has(id)) {
+          next.add(id)
+          changed = true
+        }
+      })
+
+      return changed ? next : prev
+    })
+  }, [menuData])
 
   // Prevent body scroll when popups are open
   useEffect(() => {
@@ -978,6 +1004,13 @@ export default function HubMenu() {
 
   // Scroll to category
   const scrollToCategory = (categoryId) => {
+    setExpandedGroups((prev) => {
+      if (prev.has(categoryId)) return prev
+      const next = new Set(prev)
+      next.add(categoryId)
+      return next
+    })
+
     const element = document.getElementById(`group-${categoryId}`)
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "start" })

@@ -63,6 +63,7 @@ export default function PocketPage() {
   const [dashboardLoading, setDashboardLoading] = useState(true)
   const [activeEarningAddon, setActiveEarningAddon] = useState(null)
   const [earningAddonLoading, setEarningAddonLoading] = useState(true)
+  const [liveWeekStats, setLiveWeekStats] = useState({ earnings: null, orders: null })
 
   const {
     isOnline,
@@ -152,7 +153,7 @@ export default function PocketPage() {
 
   // Calculate weekly earnings from wallet transactions (payment + earning_addon bonus)
   // Include both payment and earning_addon transactions in weekly earnings
-  const weeklyEarnings = walletState?.transactions
+  const weeklyEarningsFromWallet = walletState?.transactions
     ?.filter(t => {
       // Include both payment and earning_addon transactions
       if ((t.type !== 'payment' && t.type !== 'earning_addon') || t.status !== 'Completed') return false
@@ -186,7 +187,46 @@ export default function PocketPage() {
     }).length
   }
 
-  const weeklyOrders = calculateWeeklyOrders()
+  const weeklyOrdersFromWallet = calculateWeeklyOrders()
+
+  const weeklyEarnings = liveWeekStats.earnings ?? weeklyEarningsFromWallet
+  const weeklyOrders = liveWeekStats.orders ?? weeklyOrdersFromWallet
+
+  // Fetch real-time week summary so Pocket order count and earning stay updated.
+  useEffect(() => {
+    const fetchLiveWeekStats = async () => {
+      try {
+        const response = await deliveryAPI.getEarnings({
+          period: "week",
+          date: new Date().toISOString(),
+          page: 1,
+          limit: 1000
+        })
+
+        const summary = response?.data?.data?.summary || {}
+        setLiveWeekStats({
+          earnings: Number(summary.totalEarnings) || 0,
+          orders: Number(summary.totalOrders) || 0
+        })
+      } catch (error) {
+        if (error.code !== "ECONNABORTED" && !error.message?.includes("timeout")) {
+          console.warn("Pocket week stats fetch failed, using wallet fallback:", error?.message)
+        }
+        setLiveWeekStats({ earnings: null, orders: null })
+      }
+    }
+
+    fetchLiveWeekStats()
+    const intervalId = setInterval(fetchLiveWeekStats, 5000)
+    window.addEventListener("deliveryWalletStateUpdated", fetchLiveWeekStats)
+    window.addEventListener("deliveryOrderStatusUpdated", fetchLiveWeekStats)
+
+    return () => {
+      clearInterval(intervalId)
+      window.removeEventListener("deliveryWalletStateUpdated", fetchLiveWeekStats)
+      window.removeEventListener("deliveryOrderStatusUpdated", fetchLiveWeekStats)
+    }
+  }, [])
 
   // Fetch active earning addon offers
   useEffect(() => {
@@ -298,9 +338,14 @@ export default function PocketPage() {
   const earningsGuaranteeTarget = activeEarningAddon?.earningAmount || 0
   const earningsGuaranteeOrdersTarget = activeEarningAddon?.requiredOrders || 0
   // Only show current orders/earnings if there's an active offer
-  const earningsGuaranteeCurrentOrders = activeEarningAddon ? (activeEarningAddon.currentOrders ?? weeklyOrders) : 0
+  const addonCurrentOrders = Number(activeEarningAddon?.currentOrders) || 0
+  const earningsGuaranteeCurrentOrders = activeEarningAddon ? Math.max(addonCurrentOrders, weeklyOrders) : 0
   // Show only bonus earnings from the offer, not total weekly earnings
-  const earningsGuaranteeCurrentEarnings = activeEarningAddon ? calculateBonusEarnings() : 0
+  const addonCurrentEarnings =
+    Number(activeEarningAddon?.currentEarning ?? activeEarningAddon?.currentEarnings) || 0
+  const earningsGuaranteeCurrentEarnings = activeEarningAddon
+    ? Math.max(addonCurrentEarnings, calculateBonusEarnings())
+    : 0
   const ordersProgress = earningsGuaranteeOrdersTarget > 0
     ? Math.min(earningsGuaranteeCurrentOrders / earningsGuaranteeOrdersTarget, 1)
     : 0
@@ -351,7 +396,7 @@ export default function PocketPage() {
     // Verify pocket balance includes bonus
     // Calculate expected: Earnings + Bonus - Withdrawals
     const totalWithdrawn = balances.totalWithdrawn || 0
-    const expectedBalance = weeklyEarnings + totalBonus - totalWithdrawn
+    const expectedBalance = weeklyEarningsFromWallet + totalBonus - totalWithdrawn
     // Use the higher value to ensure bonus is included
     if (expectedBalance > pocketBalance) {
       pocketBalance = expectedBalance
@@ -369,11 +414,11 @@ export default function PocketPage() {
       walletStateTotalBalance: walletState?.totalBalance,
       balancesTotalBalance: balances.totalBalance,
       totalBonus: calculatedTotalBonus,
-      weeklyEarnings: weeklyEarnings,
+      weeklyEarnings: weeklyEarningsFromWallet,
       bonusTransactions: bonusTransactions
     })
     // Only depend on walletState and balances - totalBonus and weeklyEarnings are derived from these
-  }, [pocketBalance, walletState, balances])
+  }, [pocketBalance, walletState, balances, weeklyEarningsFromWallet])
   // Available cash limit = remaining limit (global limit - cash in hand)
   const totalCashLimit = Number.isFinite(Number(walletState?.totalCashLimit))
     ? Number(walletState.totalCashLimit)
@@ -1082,4 +1127,3 @@ export default function PocketPage() {
     </div>
   )
 }
-

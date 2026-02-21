@@ -144,8 +144,31 @@ export function clearModuleAuth(module) {
   localStorage.removeItem(`${module}_accessToken`);
   localStorage.removeItem(`${module}_authenticated`);
   localStorage.removeItem(`${module}_user`);
+  if (module === "restaurant") {
+    clearRestaurantSessionCache();
+  }
   // Also clear any sessionStorage data
   sessionStorage.removeItem(`${module}AuthData`);
+}
+
+/**
+ * Clear restaurant-local cached UI data to prevent cross-account stale state.
+ */
+export function clearRestaurantSessionCache() {
+  const keys = [
+    "restaurant_owner_contact",
+    "restaurant_onboarding",
+    "restaurant_onboarding_data",
+    "restaurant_invited_users",
+    "restaurant_schedule_off",
+    "restaurant_online_status",
+    "restaurant_outlet_timings",
+    "restaurant_hub_menu_active_tab",
+    "restaurant_name",
+    "restaurantName",
+  ];
+
+  keys.forEach((key) => localStorage.removeItem(key));
 }
 
 /**
@@ -190,6 +213,11 @@ export function setAuthData(module, token, user) {
     const tokenKey = `${module}_accessToken`;
     const authKey = `${module}_authenticated`;
     const userKey = `${module}_user`;
+
+    // Prevent stale restaurant profile data from previous account after re-login.
+    if (module === "restaurant") {
+      clearRestaurantSessionCache();
+    }
 
     localStorage.setItem(tokenKey, token);
     localStorage.setItem(authKey, 'true');
@@ -254,4 +282,3 @@ export function setAuthData(module, token, user) {
     }
   }
 }
-
