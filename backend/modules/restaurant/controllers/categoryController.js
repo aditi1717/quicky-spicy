@@ -1,4 +1,5 @@
 import RestaurantCategory from '../models/RestaurantCategory.js';
+import Menu from '../models/Menu.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import winston from 'winston';
@@ -153,11 +154,14 @@ export const updateCategory = asyncHandler(async (req, res) => {
       return errorResponse(res, 404, 'Category not found');
     }
 
+    const oldCategoryName = category.name;
+    const nextCategoryName = name !== undefined ? String(name).trim() : category.name;
+
     // Check if new name conflicts with existing category
-    if (name && name.trim() !== category.name) {
+    if (name && nextCategoryName !== category.name) {
       const existingCategory = await RestaurantCategory.findOne({
         restaurant: restaurantId,
-        name: name.trim(),
+        name: nextCategoryName,
         _id: { $ne: id },
       });
 
@@ -167,7 +171,7 @@ export const updateCategory = asyncHandler(async (req, res) => {
     }
 
     // Update fields
-    if (name !== undefined) category.name = name.trim();
+    if (name !== undefined) category.name = nextCategoryName;
     if (description !== undefined) category.description = description?.trim() || '';
     if (order !== undefined) category.order = order;
     if (icon !== undefined) category.icon = icon;
@@ -175,6 +179,45 @@ export const updateCategory = asyncHandler(async (req, res) => {
     if (isActive !== undefined) category.isActive = isActive;
 
     await category.save();
+
+    // Keep menu sections and item category labels in sync after category rename
+    if (name !== undefined && oldCategoryName !== nextCategoryName) {
+      const normalize = (value) => String(value || '').trim().toLowerCase();
+      const oldKey = normalize(oldCategoryName);
+      const menu = await Menu.findOne({ restaurant: restaurantId });
+
+      if (menu && Array.isArray(menu.sections) && menu.sections.length > 0) {
+        let hasMenuChanges = false;
+
+        menu.sections.forEach((section) => {
+          if (normalize(section.name) === oldKey) {
+            section.name = nextCategoryName;
+            hasMenuChanges = true;
+          }
+
+          (section.items || []).forEach((item) => {
+            if (normalize(item.category) === oldKey) {
+              item.category = nextCategoryName;
+              hasMenuChanges = true;
+            }
+          });
+
+          (section.subsections || []).forEach((subsection) => {
+            (subsection.items || []).forEach((item) => {
+              if (normalize(item.category) === oldKey) {
+                item.category = nextCategoryName;
+                hasMenuChanges = true;
+              }
+            });
+          });
+        });
+
+        if (hasMenuChanges) {
+          menu.markModified('sections');
+          await menu.save();
+        }
+      }
+    }
 
     return successResponse(res, 200, 'Category updated successfully', {
       category
@@ -263,4 +306,3 @@ export const reorderCategories = asyncHandler(async (req, res) => {
     return errorResponse(res, 500, 'Failed to reorder categories');
   }
 });
-

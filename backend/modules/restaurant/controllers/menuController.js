@@ -1,5 +1,6 @@
 import Menu from '../models/Menu.js';
 import Restaurant from '../models/Restaurant.js';
+import RestaurantCategory from '../models/RestaurantCategory.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import asyncHandler from '../../../shared/middleware/asyncHandler.js';
 import mongoose from 'mongoose';
@@ -624,16 +625,33 @@ export const getMenuByRestaurantId = async (req, res) => {
     console.log('[USER MENU] Processing menu for restaurant:', restaurant._id);
     console.log('[USER MENU] Total sections:', menu.sections?.length || 0);
 
+    const categoryRecords = await RestaurantCategory.find({
+      restaurant: restaurant._id,
+    })
+      .select('name isActive')
+      .lean();
+
+    const categoryStatusByName = new Map(
+      categoryRecords.map((category) => [
+        String(category.name || '').trim().toLowerCase(),
+        category.isActive !== false,
+      ])
+    );
+
     // Filter menu for user side: only show enabled sections and available items
     const filteredSections = (menu.sections || [])
       .filter(section => {
+        const sectionNameKey = String(section.name || '').trim().toLowerCase();
+        const categoryExists = categoryStatusByName.has(sectionNameKey);
+        const isCategoryActive = categoryExists ? categoryStatusByName.get(sectionNameKey) : true;
+
         // Only show sections where isEnabled is not explicitly false
         // If isEnabled is undefined/null, treat as enabled (default true)
         const isEnabled = section.isEnabled !== false;
-        if (!isEnabled) {
+        if (!isEnabled || !isCategoryActive) {
           console.log(`[USER MENU] Filtering out disabled section: "${section.name}"`);
         }
-        return isEnabled;
+        return isEnabled && isCategoryActive;
       })
       .map(section => {
         console.log(`[USER MENU] Processing section: "${section.name}", items: ${section.items?.length || 0}`);
@@ -992,4 +1010,3 @@ export const deleteAddon = asyncHandler(async (req, res) => {
     },
   });
 });
-
