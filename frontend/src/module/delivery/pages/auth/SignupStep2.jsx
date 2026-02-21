@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Upload, X, Check } from "lucide-react"
 import { deliveryAPI } from "@/lib/api"
@@ -36,6 +36,12 @@ export default function SignupStep2() {
     drivingLicensePhoto: false
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" })
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }, [])
 
   // Save uploaded docs to session storage whenever they change
   useEffect(() => {
@@ -145,6 +151,8 @@ export default function SignupStep2() {
     const file = documents[docType]
     const uploaded = uploadedDocs[docType]
     const isUploading = uploading[docType]
+    const cameraInputRef = useRef(null)
+    const galleryInputRef = useRef(null)
 
     return (
       <div className="bg-white rounded-lg p-4 border border-gray-200">
@@ -172,8 +180,8 @@ export default function SignupStep2() {
             </div>
           </div>
         ) : (
-          <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-green-500 transition-colors">
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+          <div className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 transition-colors px-4">
+            <div className="flex flex-col items-center justify-center pt-5 pb-3">
               {isUploading ? (
                 <>
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mb-2"></div>
@@ -182,24 +190,67 @@ export default function SignupStep2() {
               ) : (
                 <>
                   <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500 mb-1">Click to upload</p>
+                  <p className="text-sm text-gray-500 mb-1">Upload document</p>
                   <p className="text-xs text-gray-400">PNG, JPG up to 5MB</p>
                 </>
               )}
             </div>
+
+            {!isUploading && (
+              <div className="w-full flex items-center gap-2 pb-4">
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="flex-1 text-center px-3 py-2 rounded-md bg-[#00B761] text-white text-sm font-medium cursor-pointer hover:bg-[#00A055] transition-colors"
+                >
+                  Camera
+                </button>
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="flex-1 text-center px-3 py-2 rounded-md border border-gray-300 text-gray-700 text-sm font-medium cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  Gallery
+                </button>
+              </div>
+            )}
+
             <input
+              ref={cameraInputRef}
               type="file"
-              className="hidden"
+              className="sr-only"
               accept="image/*"
+              capture="environment"
+              onClick={(e) => {
+                e.target.value = ""
+              }}
               onChange={(e) => {
                 const selectedFile = e.target.files[0]
                 if (selectedFile) {
                   handleFileSelect(docType, selectedFile)
                 }
+                e.target.value = ""
               }}
               disabled={isUploading}
             />
-          </label>
+            <input
+              ref={galleryInputRef}
+              type="file"
+              className="sr-only"
+              accept="image/*"
+              onClick={(e) => {
+                e.target.value = ""
+              }}
+              onChange={(e) => {
+                const selectedFile = e.target.files[0]
+                if (selectedFile) {
+                  handleFileSelect(docType, selectedFile)
+                }
+                e.target.value = ""
+              }}
+              disabled={isUploading}
+            />
+          </div>
         )}
       </div>
     )
@@ -247,4 +298,3 @@ export default function SignupStep2() {
     </div>
   )
 }
-
