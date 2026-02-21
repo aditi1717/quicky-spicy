@@ -70,6 +70,7 @@ export default function ItemDetailsPage() {
   const [categories, setCategories] = useState([])
   const [loadingCategories, setLoadingCategories] = useState(true)
   const [loadingItem, setLoadingItem] = useState(false)
+  const [keyboardInset, setKeyboardInset] = useState(0)
 
   const maxNameLength = 70
   const maxDescriptionLength = 1000
@@ -100,7 +101,8 @@ export default function ItemDetailsPage() {
         setIsRecommended(item.isRecommended || false)
         setIsInStock(item.isAvailable !== false)
         setSelectedTags(item.tags || [])
-        setImages(item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []))
+        const existingImage = item.images && item.images.length > 0 ? item.images[0] : item.image
+        setImages(existingImage ? [existingImage] : [])
 
         // Parse nutrition data
         if (item.nutrition && Array.isArray(item.nutrition)) {
@@ -191,7 +193,8 @@ export default function ItemDetailsPage() {
             setIsRecommended(foundItem.isRecommended || false)
             setIsInStock(foundItem.isAvailable !== false)
             setSelectedTags(foundItem.tags || [])
-            setImages(foundItem.images && foundItem.images.length > 0 ? foundItem.images : (foundItem.image ? [foundItem.image] : []))
+            const existingImage = foundItem.images && foundItem.images.length > 0 ? foundItem.images[0] : foundItem.image
+            setImages(existingImage ? [existingImage] : [])
 
             // Parse nutrition data
             if (foundItem.nutrition && Array.isArray(foundItem.nutrition)) {
@@ -270,6 +273,48 @@ export default function ItemDetailsPage() {
     fetchCategories()
   }, [])
 
+  // Keep focused form fields visible above mobile keyboard
+  useEffect(() => {
+    const ensureFieldVisible = (target) => {
+      if (!target) return
+      const isFormField = target.matches?.('input, textarea, select, [contenteditable="true"]')
+      if (!isFormField) return
+
+      window.setTimeout(() => {
+        target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" })
+      }, 120)
+    }
+
+    const handleFocusIn = (event) => {
+      ensureFieldVisible(event.target)
+    }
+
+    document.addEventListener("focusin", handleFocusIn, true)
+    return () => {
+      document.removeEventListener("focusin", handleFocusIn, true)
+    }
+  }, [])
+
+  // Track virtual keyboard height and push footer above keyboard
+  useEffect(() => {
+    const viewport = window.visualViewport
+    if (!viewport) return
+
+    const updateKeyboardInset = () => {
+      const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+      setKeyboardInset(inset > 60 ? inset : 0)
+    }
+
+    viewport.addEventListener("resize", updateKeyboardInset)
+    viewport.addEventListener("scroll", updateKeyboardInset)
+    updateKeyboardInset()
+
+    return () => {
+      viewport.removeEventListener("resize", updateKeyboardInset)
+      viewport.removeEventListener("scroll", updateKeyboardInset)
+    }
+  }, [])
+
   // Serves info options
   const servesOptions = [
     "Serves eg. 1-2 people",
@@ -331,17 +376,20 @@ export default function ItemDetailsPage() {
 
     if (validFiles.length === 0) return
 
-    // Create preview URLs for display and map them to File objects
-    const newImagePreviews = []
-    const newImageFilesMap = new Map(imageFiles)
+    // Single-image mode: keep only the first selected valid file
+    const file = validFiles[0]
+    const previewUrl = URL.createObjectURL(file)
 
-    validFiles.forEach(file => {
-      const previewUrl = URL.createObjectURL(file)
-      newImagePreviews.push(previewUrl)
-      newImageFilesMap.set(previewUrl, file)
+    images.forEach((img) => {
+      if (img && img.startsWith('blob:')) {
+        URL.revokeObjectURL(img)
+      }
     })
 
-    setImages([...images, ...newImagePreviews])
+    const newImageFilesMap = new Map()
+    newImageFilesMap.set(previewUrl, file)
+
+    setImages([previewUrl])
     setImageFiles(newImageFilesMap)
 
     if (fileInputRef.current) {
@@ -518,8 +566,7 @@ export default function ItemDetailsPage() {
         }
       }
 
-      // Combine existing URLs and newly uploaded URLs
-      // Remove duplicates and filter out any empty strings
+      // Single-image mode: keep only one URL
       const allImageUrls = [
         ...existingImageUrls,
         ...uploadedImageUrls
@@ -527,8 +574,8 @@ export default function ItemDetailsPage() {
         url &&
         typeof url === 'string' &&
         url.trim() !== '' &&
-        self.indexOf(url) === index // Remove duplicates
-      )
+        self.indexOf(url) === index
+      ).slice(0, 1)
 
       // Debug: Log image URLs
       console.log('=== IMAGE UPLOAD SUMMARY ===')
@@ -643,7 +690,7 @@ export default function ItemDetailsPage() {
         name: itemName.trim(),
         nameArabic: "",
         image: allImageUrls.length > 0 ? allImageUrls[0] : "",
-        images: allImageUrls.length > 0 ? allImageUrls : [], // Multiple images support - all Cloudinary URLs (ensure it's always an array)
+        images: allImageUrls.length > 0 ? [allImageUrls[0]] : [],
         category: category,
         rating: itemData?.rating || 0.0,
         reviews: itemData?.reviews || 0,
@@ -664,7 +711,7 @@ export default function ItemDetailsPage() {
         tags: [],
         nutrition: nutritionStrings,
         allergies: [],
-        photoCount: allImageUrls.length || 1,
+        photoCount: allImageUrls.length > 0 ? 1 : 0,
         // Additional fields for complete item details
         subCategory: subCategory || "",
         servesInfo: "",
@@ -774,7 +821,7 @@ export default function ItemDetailsPage() {
 
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto pb-24">
+      <div className="flex-1 overflow-y-auto" style={{ paddingBottom: `${96 + keyboardInset}px` }}>
         {/* Image Carousel */}
         <div className="relative bg-white">
           {images.length > 0 ? (
@@ -869,7 +916,7 @@ export default function ItemDetailsPage() {
                   <Camera className="w-10 h-10 text-gray-400" />
                 </div>
                 <p className="text-sm font-medium text-gray-600">No images added yet</p>
-                <p className="text-xs text-gray-500 mt-1">Tap the button below to add multiple images</p>
+                <p className="text-xs text-gray-500 mt-1">Tap the button below to add one image</p>
               </div>
             </div>
           )}
@@ -880,7 +927,6 @@ export default function ItemDetailsPage() {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              multiple
               onChange={handleImageAdd}
               className="hidden"
               id="image-upload"
@@ -892,7 +938,7 @@ export default function ItemDetailsPage() {
               <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
                 <Plus className="w-4 h-4" />
               </div>
-              <span>Add Images</span>
+              <span>Add Image</span>
             </label>
           </div>
         </div>
@@ -1233,7 +1279,10 @@ export default function ItemDetailsPage() {
 
 
       {/* Bottom Sticky Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200  z-40">
+      <div
+        className="fixed left-0 right-0 bg-white border-t border-gray-200 z-40"
+        style={{ bottom: `${keyboardInset}px` }}
+      >
         <div className={`flex gap-3 px-4 py-4 ${isNewItem ? 'justify-end' : ''}`}>
           {!isNewItem && (
             <button

@@ -5,6 +5,43 @@ import { successResponse, errorResponse } from '../../../shared/utils/response.j
 import asyncHandler from '../../../shared/middleware/asyncHandler.js';
 import mongoose from 'mongoose';
 
+const normalizeSingleItemImages = (item = {}) => {
+  const validArrayImages = Array.isArray(item.images)
+    ? item.images.filter((img) => img && typeof img === 'string' && img.trim() !== '')
+    : [];
+  const fallbackSingleImage = item.image && typeof item.image === 'string' && item.image.trim() !== ''
+    ? item.image.trim()
+    : '';
+
+  const firstImage = (validArrayImages[0] || fallbackSingleImage || '').trim();
+  return {
+    image: firstImage,
+    images: firstImage ? [firstImage] : [],
+    photoCount: firstImage ? 1 : 0,
+  };
+};
+
+const getItemAddedAtMs = (item = {}) => {
+  if (item.requestedAt) {
+    const requestedAtMs = new Date(item.requestedAt).getTime();
+    if (!Number.isNaN(requestedAtMs)) return requestedAtMs;
+  }
+
+  const rawId = String(item.id || item._id || '');
+  const tsMatch = rawId.match(/(\d{10,13})/);
+  if (tsMatch && tsMatch[1]) {
+    const parsed = Number(tsMatch[1]);
+    if (!Number.isNaN(parsed)) {
+      return tsMatch[1].length === 10 ? parsed * 1000 : parsed;
+    }
+  }
+
+  return 0;
+};
+
+const sortNewestFirst = (items = []) =>
+  [...items].sort((a, b) => getItemAddedAtMs(b) - getItemAddedAtMs(a));
+
 // Get menu for a restaurant
 export const getMenu = asyncHandler(async (req, res) => {
   // Restaurant is attached by authenticate middleware
@@ -87,6 +124,7 @@ export const updateMenu = asyncHandler(async (req, res) => {
       id: section.id || `section-${index}`,
       name: section.name || "Unnamed Section",
       items: Array.isArray(section.items) ? section.items.map(item => {
+        const normalizedMedia = normalizeSingleItemImages(item);
         // CRITICAL: Find existing item to preserve approval status fields
         const existingItem = existingSection?.items?.find(i => String(i.id) === String(item.id));
 
@@ -94,7 +132,7 @@ export const updateMenu = asyncHandler(async (req, res) => {
           id: String(item.id || Date.now() + Math.random()),
           name: item.name || "Unnamed Item",
           nameArabic: item.nameArabic || "",
-          image: item.image || "",
+          image: normalizedMedia.image,
           category: item.category || section.name,
           rating: item.rating ?? 0.0,
           reviews: item.reviews ?? 0,
@@ -119,7 +157,7 @@ export const updateMenu = asyncHandler(async (req, res) => {
           tags: Array.isArray(item.tags) ? item.tags : [],
           nutrition: Array.isArray(item.nutrition) ? item.nutrition : [],
           allergies: Array.isArray(item.allergies) ? item.allergies : [],
-          photoCount: item.photoCount ?? 1,
+          photoCount: normalizedMedia.photoCount,
           // Additional fields for complete item details
           subCategory: item.subCategory || "",
           servesInfo: item.servesInfo || "",
@@ -128,36 +166,7 @@ export const updateMenu = asyncHandler(async (req, res) => {
           itemSizeUnit: item.itemSizeUnit || "piece",
           gst: item.gst ?? 0,
           preparationTime: existingItem?.preparationTime || item.preparationTime || "",
-          images: (() => {
-            // Ensure images array is properly handled - CRITICAL: Preserve all images
-            console.log(`[NORMALIZE] Item "${item.name || 'unnamed'}": Processing images...`);
-            console.log(`  - item.images type: ${Array.isArray(item.images) ? 'Array' : typeof item.images}`);
-            console.log(`  - item.images value:`, item.images);
-            console.log(`  - item.image value:`, item.image);
-            console.log(`  - item.photoCount:`, item.photoCount);
-
-            if (Array.isArray(item.images)) {
-              const filteredImages = item.images.filter(img => {
-                const isValid = img && typeof img === 'string' && img.trim() !== '';
-                if (!isValid) {
-                  console.log(`  - Filtering out invalid image:`, img);
-                }
-                return isValid;
-              });
-              console.log(`  - Input images: ${item.images.length}, Filtered images: ${filteredImages.length}`);
-              console.log(`  - Final images array:`, filteredImages);
-              if (filteredImages.length !== item.images.length) {
-                console.warn(`  - WARNING: Some images were filtered out! Original: ${item.images.length}, Filtered: ${filteredImages.length}`);
-              }
-              return filteredImages;
-            } else if (item.image && typeof item.image === 'string' && item.image.trim() !== '') {
-              console.log(`  - No images array, using single image field:`, item.image);
-              return [item.image];
-            } else {
-              console.log(`  - No images found, returning empty array`);
-              return [];
-            }
-          })(),
+          images: normalizedMedia.images,
           // CRITICAL: Preserve approval status fields from existing item
           // Restaurant should NOT be able to overwrite these fields
           approvalStatus: existingItem?.approvalStatus || item.approvalStatus || 'pending',
@@ -176,6 +185,7 @@ export const updateMenu = asyncHandler(async (req, res) => {
           id: subsection.id || `subsection-${Date.now()}`,
           name: subsection.name || "Unnamed Subsection",
           items: Array.isArray(subsection.items) ? subsection.items.map(item => {
+            const normalizedMedia = normalizeSingleItemImages(item);
             // CRITICAL: Find existing item to preserve approval status fields
             const existingItem = existingSubsection?.items?.find(i => String(i.id) === String(item.id));
 
@@ -183,7 +193,7 @@ export const updateMenu = asyncHandler(async (req, res) => {
               id: String(item.id || Date.now() + Math.random()),
               name: item.name || "Unnamed Item",
               nameArabic: item.nameArabic || "",
-              image: item.image || "",
+              image: normalizedMedia.image,
               category: item.category || section.name,
               rating: item.rating ?? 0.0,
               reviews: item.reviews ?? 0,
@@ -208,7 +218,7 @@ export const updateMenu = asyncHandler(async (req, res) => {
               tags: Array.isArray(item.tags) ? item.tags : [],
               nutrition: Array.isArray(item.nutrition) ? item.nutrition : [],
               allergies: Array.isArray(item.allergies) ? item.allergies : [],
-              photoCount: item.photoCount ?? 1,
+              photoCount: normalizedMedia.photoCount,
               // Additional fields for complete item details
               subCategory: item.subCategory || "",
               servesInfo: item.servesInfo || "",
@@ -217,20 +227,7 @@ export const updateMenu = asyncHandler(async (req, res) => {
               itemSizeUnit: item.itemSizeUnit || "piece",
               gst: item.gst ?? 0,
               preparationTime: existingItem?.preparationTime || item.preparationTime || "",
-              images: (() => {
-                // Ensure images array is properly handled
-                if (Array.isArray(item.images) && item.images.length > 0) {
-                  const filteredImages = item.images.filter(img => img && typeof img === 'string' && img.trim() !== '');
-                  console.log(`[NORMALIZE] Subsection Item "${item.name}": Processing ${item.images.length} images, filtered to ${filteredImages.length} valid images`);
-                  return filteredImages;
-                } else if (item.image && item.image.trim() !== '') {
-                  console.log(`[NORMALIZE] Subsection Item "${item.name}": No images array, using single image field`);
-                  return [item.image];
-                } else {
-                  console.log(`[NORMALIZE] Subsection Item "${item.name}": No images found, returning empty array`);
-                  return [];
-                }
-              })(),
+              images: normalizedMedia.images,
               // CRITICAL: Preserve approval status fields from existing item
               // Restaurant should NOT be able to overwrite these fields
               approvalStatus: existingItem?.approvalStatus || item.approvalStatus || 'pending',
@@ -390,11 +387,12 @@ export const addItemToSection = asyncHandler(async (req, res) => {
   }
 
   // Normalize item data
+  const normalizedMedia = normalizeSingleItemImages(item);
   const newItem = {
     id: String(item.id || Date.now() + Math.random()),
     name: item.name.trim(),
     nameArabic: item.nameArabic || "",
-    image: item.image || "",
+    image: normalizedMedia.image,
     category: item.category || section.name,
     rating: item.rating ?? 0.0,
     reviews: item.reviews ?? 0,
@@ -419,7 +417,7 @@ export const addItemToSection = asyncHandler(async (req, res) => {
     tags: Array.isArray(item.tags) ? item.tags : [],
     nutrition: Array.isArray(item.nutrition) ? item.nutrition : [],
     allergies: Array.isArray(item.allergies) ? item.allergies : [],
-    photoCount: item.photoCount ?? 1,
+    photoCount: normalizedMedia.photoCount,
     // Additional fields for complete item details
     subCategory: item.subCategory || "",
     servesInfo: item.servesInfo || "",
@@ -427,9 +425,7 @@ export const addItemToSection = asyncHandler(async (req, res) => {
     itemSizeQuantity: item.itemSizeQuantity || "",
     itemSizeUnit: item.itemSizeUnit || "piece",
     gst: item.gst ?? 0,
-    images: Array.isArray(item.images) && item.images.length > 0
-      ? item.images.filter(img => img && typeof img === 'string' && img.trim() !== '')
-      : (item.image && item.image.trim() !== '' ? [item.image] : []),
+    images: normalizedMedia.images,
     preparationTime: item.preparationTime || "",
     approvalStatus: 'pending', // New items require admin approval
     requestedAt: new Date(),
@@ -534,11 +530,12 @@ export const addItemToSubsection = asyncHandler(async (req, res) => {
   }
 
   // Normalize item data
+  const normalizedMedia = normalizeSingleItemImages(item);
   const newItem = {
     id: String(item.id || Date.now() + Math.random()),
     name: item.name.trim(),
     nameArabic: item.nameArabic || "",
-    image: item.image || "",
+    image: normalizedMedia.image,
     category: item.category || section.name,
     rating: item.rating ?? 0.0,
     reviews: item.reviews ?? 0,
@@ -563,11 +560,9 @@ export const addItemToSubsection = asyncHandler(async (req, res) => {
     tags: Array.isArray(item.tags) ? item.tags : [],
     nutrition: Array.isArray(item.nutrition) ? item.nutrition : [],
     allergies: Array.isArray(item.allergies) ? item.allergies : [],
-    photoCount: item.photoCount ?? 1,
+    photoCount: normalizedMedia.photoCount,
     gst: item.gst ?? 0,
-    images: Array.isArray(item.images) && item.images.length > 0
-      ? item.images.filter(img => img && typeof img === 'string' && img.trim() !== '')
-      : (item.image && item.image.trim() !== '' ? [item.image] : []),
+    images: normalizedMedia.images,
     preparationTime: item.preparationTime || "",
     approvalStatus: 'pending', // New items require admin approval
     requestedAt: new Date(),
@@ -696,10 +691,11 @@ export const getMenuByRestaurantId = async (req, res) => {
               return shouldShow;
             });
             // Only include subsection if it has available items
-            if (availableSubsectionItems.length > 0) {
+            const sortedSubsectionItems = sortNewestFirst(availableSubsectionItems);
+            if (sortedSubsectionItems.length > 0) {
               return {
                 ...subsection,
-                items: availableSubsectionItems,
+                items: sortedSubsectionItems,
               };
             }
             return null;
@@ -709,11 +705,12 @@ export const getMenuByRestaurantId = async (req, res) => {
         // Include section if it has at least one available item OR at least one subsection with available items
         // This ensures category remains visible even if some items are unavailable
         if (availableItems.length > 0 || availableSubsections.length > 0) {
+          const sortedItems = sortNewestFirst(availableItems);
           console.log(`[USER MENU] Section "${section.name}" included with ${availableItems.length} items and ${availableSubsections.length} subsections`);
           return {
             ...section,
             name: section.name || "Unnamed Section", // Ensure name is always present
-            items: availableItems,
+            items: sortedItems,
             subsections: availableSubsections,
           };
         }

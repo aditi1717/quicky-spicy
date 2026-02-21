@@ -14,6 +14,48 @@ const logger = winston.createLogger({
   ]
 });
 
+const normalizeCategoryName = (value) => String(value || '').trim().toLowerCase();
+
+const buildDynamicItemCountMap = (menu) => {
+  const counts = new Map();
+
+  if (!menu || !Array.isArray(menu.sections)) {
+    return counts;
+  }
+
+  const increment = (categoryName) => {
+    const key = normalizeCategoryName(categoryName);
+    if (!key) return;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  };
+
+  menu.sections.forEach((section) => {
+    const sectionName = section?.name || '';
+
+    (section?.items || []).forEach((item) => {
+      increment(item?.category || sectionName);
+    });
+
+    (section?.subsections || []).forEach((subsection) => {
+      (subsection?.items || []).forEach((item) => {
+        increment(item?.category || sectionName);
+      });
+    });
+  });
+
+  return counts;
+};
+
+const attachDynamicItemCounts = async (restaurantId, categories) => {
+  const menu = await Menu.findOne({ restaurant: restaurantId }).select('sections').lean();
+  const counts = buildDynamicItemCountMap(menu);
+
+  return (categories || []).map((category) => ({
+    ...category,
+    itemCount: counts.get(normalizeCategoryName(category?.name)) || 0,
+  }));
+};
+
 /**
  * Get all categories for a restaurant
  * GET /api/restaurant/categories
@@ -26,15 +68,17 @@ export const getCategories = asyncHandler(async (req, res) => {
       return errorResponse(res, 401, 'Restaurant not authenticated');
     }
 
-    const categories = await RestaurantCategory.find({ 
+    const categories = await RestaurantCategory.find({
       restaurant: restaurantId,
-      isActive: true 
+      isActive: true
     })
       .sort({ order: 1, createdAt: 1 })
       .lean();
 
+    const categoriesWithCounts = await attachDynamicItemCounts(restaurantId, categories);
+
     return successResponse(res, 200, 'Categories retrieved successfully', {
-      categories
+      categories: categoriesWithCounts
     });
   } catch (error) {
     logger.error(`Error fetching categories: ${error.message}`);
@@ -54,14 +98,16 @@ export const getAllCategories = asyncHandler(async (req, res) => {
       return errorResponse(res, 401, 'Restaurant not authenticated');
     }
 
-    const categories = await RestaurantCategory.find({ 
-      restaurant: restaurantId 
+    const categories = await RestaurantCategory.find({
+      restaurant: restaurantId
     })
       .sort({ order: 1, createdAt: 1 })
       .lean();
 
+    const categoriesWithCounts = await attachDynamicItemCounts(restaurantId, categories);
+
     return successResponse(res, 200, 'Categories retrieved successfully', {
-      categories
+      categories: categoriesWithCounts
     });
   } catch (error) {
     logger.error(`Error fetching all categories: ${error.message}`);
@@ -259,8 +305,12 @@ export const deleteCategory = asyncHandler(async (req, res) => {
       return errorResponse(res, 404, 'Category not found');
     }
 
-    // Check if category has items
-    if (category.itemCount > 0) {
+    const menu = await Menu.findOne({ restaurant: restaurantId }).select('sections').lean();
+    const counts = buildDynamicItemCountMap(menu);
+    const liveItemCount = counts.get(normalizeCategoryName(category.name)) || 0;
+
+    // Check if category has items (dynamic from menu data)
+    if (liveItemCount > 0) {
       return errorResponse(res, 400, 'Cannot delete category with items. Please remove all items first or deactivate the category.');
     }
 
