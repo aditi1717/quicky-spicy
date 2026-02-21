@@ -813,7 +813,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
  * POST /api/auth/firebase/google-login
  */
 export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
-  const { idToken, role = "restaurant" } = req.body;
+  const { idToken, role = "restaurant", referralCode } = req.body;
 
   if (!idToken) {
     return errorResponse(res, 400, "Firebase ID token is required");
@@ -923,6 +923,11 @@ export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
         role: user.role,
       });
     } else {
+      const referrer =
+        userRole === "user" && referralCode
+          ? await resolveReferrerByCode(referralCode)
+          : null;
+
       // Auto-register new user based on Firebase data
       const userData = {
         name: name.trim(),
@@ -940,6 +945,9 @@ export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
 
       try {
         user = await User.create(userData);
+        if (referrer) {
+          await applyReferralReward({ newUser: user, referrer });
+        }
 
         logger.info("New user registered via Firebase Google login", {
           firebaseUid,

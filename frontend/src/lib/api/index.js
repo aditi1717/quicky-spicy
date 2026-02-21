@@ -119,10 +119,11 @@ export const authAPI = {
   },
 
   // Login/Register via Firebase Google ID token
-  firebaseGoogleLogin: (idToken, role = "restaurant") => {
+  firebaseGoogleLogin: (idToken, role = "restaurant", referralCode = null) => {
     return apiClient.post(API_ENDPOINTS.AUTH.FIREBASE_GOOGLE_LOGIN, {
       idToken,
       role,
+      ...(referralCode ? { referralCode: String(referralCode).trim().toUpperCase() } : {}),
     });
   },
 

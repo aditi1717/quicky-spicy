@@ -55,6 +55,20 @@ export default function Wallet() {
 
   // Get current balance from wallet
   const currentBalance = wallet?.balance || 0
+  const referralEarnings = useMemo(() => {
+    if (wallet?.referralEarnings != null) {
+      return Number(wallet.referralEarnings) || 0
+    }
+    return transactions
+      .filter(
+        (transaction) =>
+          transaction.type === 'addition' &&
+          transaction.status === 'Completed' &&
+          (transaction?.metadata?.source === 'referral_signup' ||
+            String(transaction.description || '').toLowerCase().startsWith('referral reward'))
+      )
+      .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0)
+  }, [wallet, transactions])
 
   // Filter transactions based on selected filter
   const filteredTransactions = useMemo(() => {
@@ -179,6 +193,13 @@ export default function Wallet() {
                 <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm lg:text-base mb-1">Current Balance</p>
                 <p className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold text-gray-900 dark:text-white">{formatAmount(currentBalance)}</p>
               </div>
+
+              <div className="mb-2 md:mb-3">
+                <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm lg:text-base mb-1">Referral Earnings</p>
+                <p className="text-lg md:text-xl lg:text-2xl font-semibold text-green-600 dark:text-green-400">
+                  {formatAmount(referralEarnings)}
+                </p>
+              </div>
               
               {/* Subtitle */}
               <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm lg:text-base text-center md:text-left max-w-md">
@@ -253,6 +274,12 @@ export default function Wallet() {
                           <p className="text-gray-900 dark:text-white font-semibold text-sm md:text-base lg:text-lg truncate mb-1">
                             {transaction.description}
                           </p>
+                          {(transaction?.metadata?.source === 'referral_signup' ||
+                            String(transaction.description || '').toLowerCase().startsWith('referral reward')) && (
+                            <p className="text-[11px] md:text-xs text-green-600 dark:text-green-400 font-medium mb-1">
+                              Referral reward
+                            </p>
+                          )}
                           <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm lg:text-base">
                             {formatDate(transaction.date || transaction.createdAt)}
                           </p>

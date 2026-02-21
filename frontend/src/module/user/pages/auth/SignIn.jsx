@@ -61,6 +61,13 @@ export default function SignIn() {
   const [isLoading, setIsLoading] = useState(false)
   const [apiError, setApiError] = useState("")
   const redirectHandledRef = useRef(false)
+  const getPendingReferralCode = () => {
+    const code = String(sessionStorage.getItem("pendingReferralCode") || "").trim().toUpperCase()
+    return code || null
+  }
+  const clearPendingReferralCode = () => {
+    sessionStorage.removeItem("pendingReferralCode")
+  }
 
   // Helper function to process signed-in user
   const processSignedInUser = async (user, source = "unknown") => {
@@ -83,7 +90,7 @@ export default function SignIn() {
       const idToken = await user.getIdToken()
       console.log(`✅ Got ID token from ${source}, calling backend...`)
 
-      const response = await authAPI.firebaseGoogleLogin(idToken, "user")
+      const response = await authAPI.firebaseGoogleLogin(idToken, "user", getPendingReferralCode())
       const data = response?.data?.data || {}
 
       console.log(`✅ Backend response from ${source}:`, {
@@ -96,6 +103,7 @@ export default function SignIn() {
       const appUser = data.user
 
       if (accessToken && appUser) {
+        clearPendingReferralCode()
         setAuthData("user", accessToken, appUser)
         window.dispatchEvent(new Event("userAuthChanged"))
 
@@ -310,7 +318,7 @@ export default function SignIn() {
         const idToken = await user.getIdToken()
         console.log(`✅ Got ID token from ${source}, calling backend...`)
 
-        const response = await authAPI.firebaseGoogleLogin(idToken, "user")
+        const response = await authAPI.firebaseGoogleLogin(idToken, "user", getPendingReferralCode())
         const data = response?.data?.data || {}
 
         console.log(`✅ Backend response from ${source}:`, {
@@ -323,6 +331,7 @@ export default function SignIn() {
         const appUser = data.user
 
         if (accessToken && appUser) {
+          clearPendingReferralCode()
           setAuthData("user", accessToken, appUser)
           window.dispatchEvent(new Event("userAuthChanged"))
 
@@ -611,6 +620,14 @@ export default function SignIn() {
     redirectHandledRef.current = false // Reset flag when starting new sign-in
 
     try {
+      const queryReferralCode = String(searchParams.get("ref") || "").trim().toUpperCase()
+      const normalizedReferralCode = String(formData.referralCode || queryReferralCode || "").trim().toUpperCase()
+      if (isSignUp && normalizedReferralCode) {
+        sessionStorage.setItem("pendingReferralCode", normalizedReferralCode)
+      } else {
+        clearPendingReferralCode()
+      }
+
       // Ensure Firebase is initialized before use
       ensureFirebaseInitialized()
 
@@ -672,6 +689,7 @@ export default function SignIn() {
   const toggleMode = () => {
     const newMode = isSignUp ? "signin" : "signup"
     navigate(`/user/auth/sign-in?mode=${newMode}`, { replace: true })
+    clearPendingReferralCode()
     // Reset form
     setFormData({ phone: "", countryCode: "+91", email: "", name: "", referralCode: "" })
     setErrors({ phone: "", email: "", name: "" })
