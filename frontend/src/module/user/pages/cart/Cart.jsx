@@ -143,6 +143,7 @@ export default function Cart() {
   // Fee settings from database (used as fallback if pricing not available)
   const [feeSettings, setFeeSettings] = useState({
     deliveryFee: 25,
+    deliveryFeeRanges: [],
     freeDeliveryThreshold: 149,
     platformFee: 5,
     gstRate: 5,
@@ -587,7 +588,7 @@ export default function Cart() {
     }
 
     calculatePricing()
-  }, [cart, defaultAddress, appliedCoupon, couponCode, deliveryFleet, restaurantId])
+  }, [cart, defaultAddress, appliedCoupon, couponCode, deliveryFleet, restaurantId, feeSettings])
 
   // Fetch wallet balance
   useEffect(() => {
@@ -616,6 +617,7 @@ export default function Cart() {
         if (response.data.success && response.data.data.feeSettings) {
           setFeeSettings({
             deliveryFee: response.data.data.feeSettings.deliveryFee || 25,
+            deliveryFeeRanges: response.data.data.feeSettings.deliveryFeeRanges || [],
             freeDeliveryThreshold: response.data.data.feeSettings.freeDeliveryThreshold || 149,
             platformFee: response.data.data.feeSettings.platformFee || 5,
             gstRate: response.data.data.feeSettings.gstRate || 5,
@@ -626,12 +628,53 @@ export default function Cart() {
         // Keep default values on error
       }
     }
+
+    const handleFocus = () => {
+      fetchFeeSettings()
+    }
+
     fetchFeeSettings()
+    window.addEventListener("focus", handleFocus)
+    const intervalId = setInterval(fetchFeeSettings, 30000)
+
+    return () => {
+      window.removeEventListener("focus", handleFocus)
+      clearInterval(intervalId)
+    }
   }, [])
 
   // Use backend pricing if available, otherwise fallback to database settings
   const subtotal = pricing?.subtotal || cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0)
-  const deliveryFee = pricing?.deliveryFee ?? (subtotal >= feeSettings.freeDeliveryThreshold || appliedCoupon?.freeDelivery ? 0 : feeSettings.deliveryFee)
+  const fallbackDeliveryFee = (() => {
+    if (appliedCoupon?.freeDelivery) {
+      return 0
+    }
+
+    const ranges = Array.isArray(feeSettings.deliveryFeeRanges) ? [...feeSettings.deliveryFeeRanges] : []
+    if (ranges.length > 0) {
+      const sortedRanges = ranges.sort((a, b) => Number(a.min) - Number(b.min))
+      for (let i = 0; i < sortedRanges.length; i += 1) {
+        const range = sortedRanges[i]
+        const min = Number(range.min)
+        const max = Number(range.max)
+        const fee = Number(range.fee)
+        const isLastRange = i === sortedRanges.length - 1
+        const inRange = isLastRange
+          ? subtotal >= min && subtotal <= max
+          : subtotal >= min && subtotal < max
+        if (inRange) return fee
+      }
+      // Ranges are configured; if no range matched, treat as free delivery.
+      return 0
+    }
+
+    if (subtotal >= feeSettings.freeDeliveryThreshold) {
+      return 0
+    }
+
+    return Number(feeSettings.deliveryFee || 0)
+  })()
+  const deliveryFee = pricing?.deliveryFee ?? fallbackDeliveryFee
   const platformFee = pricing?.platformFee || feeSettings.platformFee
   const gstCharges = pricing?.tax || Math.round(subtotal * (feeSettings.gstRate / 100))
   const discount = pricing?.discount || (appliedCoupon ? Math.min(appliedCoupon.discount, subtotal * 0.5) : 0)

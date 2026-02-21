@@ -42,21 +42,9 @@ const getFeeSettings = async () => {
 export const calculateDeliveryFee = async (orderValue, restaurant, deliveryAddress = null) => {
   // Get fee settings from database
   const feeSettings = await getFeeSettings();
-  
-  // Check restaurant settings for free delivery threshold (takes priority)
-  if (restaurant?.freeDeliveryAbove) {
-    if (orderValue >= restaurant.freeDeliveryAbove) {
-      return 0; // Free delivery
-    }
-  } else {
-    // Use admin settings for free delivery threshold
-    const freeDeliveryThreshold = feeSettings.freeDeliveryThreshold || 149;
-    if (orderValue >= freeDeliveryThreshold) {
-      return 0;
-    }
-  }
-  
-  // Check if delivery fee ranges are configured
+
+  // 1) If delivery fee ranges are configured, they are the source of truth.
+  // This avoids unintended FREE delivery from threshold defaults.
   if (feeSettings.deliveryFeeRanges && Array.isArray(feeSettings.deliveryFeeRanges) && feeSettings.deliveryFeeRanges.length > 0) {
     // Sort ranges by min value to ensure proper checking
     const sortedRanges = [...feeSettings.deliveryFeeRanges].sort((a, b) => a.min - b.min);
@@ -79,9 +67,22 @@ export const calculateDeliveryFee = async (orderValue, restaurant, deliveryAddre
         }
       }
     }
+
+    // If ranges exist but none matched, treat as free delivery.
+    return 0;
   }
-  
-  // Fallback to default delivery fee if no range matches
+
+  // 2) No ranges configured, use threshold-based free delivery logic.
+  if (restaurant?.freeDeliveryAbove && orderValue >= restaurant.freeDeliveryAbove) {
+    return 0;
+  }
+
+  const freeDeliveryThreshold = feeSettings.freeDeliveryThreshold || 149;
+  if (orderValue >= freeDeliveryThreshold) {
+    return 0;
+  }
+
+  // 3) Base delivery fee fallback.
   const baseDeliveryFee = feeSettings.deliveryFee || 25;
   
   // TODO: Add distance-based calculation when address coordinates are available
