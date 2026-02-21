@@ -139,6 +139,25 @@ const userSchema = new mongoose.Schema({
       default: 'INR'
     }
   },
+  referralCode: {
+    type: String,
+    uppercase: true,
+    trim: true,
+    sparse: true,
+  },
+  referredBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  referredAt: {
+    type: Date,
+    default: null,
+  },
+  referralRewardGranted: {
+    type: Boolean,
+    default: false,
+  },
   goldMembership: {
     isActive: {
       type: Boolean,
@@ -228,6 +247,7 @@ userSchema.index({ 'addresses.location': '2dsphere' });
 userSchema.index({ 'currentLocation.location': '2dsphere' }); // GeoJSON index for current location queries
 // Note: Single-field indexes on email/phone removed - compound indexes {email:1,role:1} and {phone:1,role:1} can serve as prefixes
 userSchema.index({ role: 1 });
+userSchema.index({ referralCode: 1 }, { unique: true, sparse: true });
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {

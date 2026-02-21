@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import UserWallet from "../../user/models/UserWallet.js";
 import otpService from "../services/otpService.js";
 import jwtService from "../services/jwtService.js";
 import googleAuthService from "../services/googleAuthService.js";
@@ -19,6 +20,89 @@ const logger = winston.createLogger({
     }),
   ],
 });
+
+const REFERRAL_REWARD_AMOUNT = 50;
+
+const normalizeReferralCode = (code = "") =>
+  String(code || "").trim().toUpperCase();
+
+const buildReferralBase = (name = "") => {
+  const letters = String(name || "")
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "")
+    .slice(0, 4);
+  return letters || "USER";
+};
+
+const generateRandomSuffix = () =>
+  Math.floor(1000 + Math.random() * 9000).toString();
+
+const generateUniqueReferralCode = async (name = "") => {
+  const base = buildReferralBase(name);
+  for (let attempt = 0; attempt < 15; attempt += 1) {
+    const candidate = `${base}${generateRandomSuffix()}`;
+    const exists = await User.exists({ referralCode: candidate });
+    if (!exists) return candidate;
+  }
+  return `QS${Date.now().toString().slice(-8)}`;
+};
+
+const resolveReferrerByCode = async (referralCode) => {
+  const code = normalizeReferralCode(referralCode);
+  if (!code) return null;
+
+  const referrer = await User.findOne({
+    referralCode: code,
+    role: "user",
+    isActive: true,
+  });
+
+  if (!referrer) {
+    throw new Error("Invalid referral code");
+  }
+
+  return referrer;
+};
+
+const applyReferralReward = async ({ newUser, referrer }) => {
+  if (!newUser || !referrer || newUser.role !== "user") return;
+  if (newUser.referralRewardGranted) return;
+
+  const rewardDescription = `Referral reward: ${newUser.name || "New user"} joined`;
+
+  const wallet = await UserWallet.findOrCreateByUserId(referrer._id);
+  wallet.addTransaction({
+    amount: REFERRAL_REWARD_AMOUNT,
+    type: "addition",
+    status: "Completed",
+    description: rewardDescription,
+    paymentMethod: "wallet",
+    metadata: new Map([
+      ["source", "referral_signup"],
+      ["referredUserId", newUser._id.toString()],
+      ["referredUserName", newUser.name || ""],
+    ]),
+  });
+  await wallet.save();
+
+  await User.findByIdAndUpdate(referrer._id, {
+    "wallet.balance": wallet.balance,
+    "wallet.currency": wallet.currency || "INR",
+  });
+
+  newUser.referredBy = referrer._id;
+  newUser.referredAt = new Date();
+  newUser.referralRewardGranted = true;
+  await newUser.save();
+};
+
+const ensureReferralCodeForUser = async (user) => {
+  if (!user || user.role !== "user") return user;
+  if (user.referralCode) return user;
+  user.referralCode = await generateUniqueReferralCode(user.name || "USER");
+  await user.save();
+  return user;
+};
 
 /**
  * Send OTP for phone number or email
@@ -78,6 +162,7 @@ export const verifyOTP = asyncHandler(async (req, res) => {
     name,
     role = "user",
     password,
+    referralCode,
   } = req.body;
 
   // Validate that either phone or email is provided
@@ -115,6 +200,11 @@ export const verifyOTP = asyncHandler(async (req, res) => {
     const identifierType = phone ? "phone" : "email";
 
     if (purpose === "register") {
+      const referrer =
+        userRole === "user" && referralCode
+          ? await resolveReferrerByCode(referralCode)
+          : null;
+
       // Registration flow
       // Check if user already exists with same email/phone AND role
       const findQuery = phone
@@ -144,6 +234,10 @@ export const verifyOTP = asyncHandler(async (req, res) => {
         signupMethod: phone ? "phone" : "email",
       };
 
+      if (userRole === "user") {
+        userData.referralCode = await generateUniqueReferralCode(name);
+      }
+
       if (phone) {
         userData.phone = phone;
         userData.phoneVerified = true;
@@ -160,6 +254,9 @@ export const verifyOTP = asyncHandler(async (req, res) => {
 
       try {
         user = await User.create(userData);
+        if (referrer) {
+          await applyReferralReward({ newUser: user, referrer });
+        }
       } catch (createError) {
         // Handle duplicate key error - user might have been created between findOne and create
         if (createError.code === 11000) {
@@ -241,12 +338,21 @@ export const verifyOTP = asyncHandler(async (req, res) => {
       await otpService.verifyOTP(phone || null, otp, purpose, email || null);
 
       if (!user) {
+        const referrer =
+          userRole === "user" && referralCode
+            ? await resolveReferrerByCode(referralCode)
+            : null;
+
         // Auto-register new user after OTP verification
         const userData = {
           name,
           role: userRole,
           signupMethod: phone ? "phone" : "email",
         };
+
+        if (userRole === "user") {
+          userData.referralCode = await generateUniqueReferralCode(name);
+        }
 
         if (phone) {
           userData.phone = phone;
@@ -263,6 +369,9 @@ export const verifyOTP = asyncHandler(async (req, res) => {
 
         try {
           user = await User.create(userData);
+          if (referrer) {
+            await applyReferralReward({ newUser: user, referrer });
+          }
         } catch (createError) {
           // Handle duplicate key error - user might have been created between findOne and create
           if (createError.code === 11000) {
@@ -296,6 +405,8 @@ export const verifyOTP = asyncHandler(async (req, res) => {
       }
     }
 
+    await ensureReferralCodeForUser(user);
+
     // Generate tokens
     const tokens = jwtService.generateTokens({
       userId: user._id.toString(),
@@ -323,6 +434,7 @@ export const verifyOTP = asyncHandler(async (req, res) => {
         role: user.role,
         profileImage: user.profileImage,
         signupMethod: user.signupMethod,
+        referralCode: user.referralCode,
       },
     });
   } catch (error) {
@@ -389,7 +501,7 @@ export const logout = asyncHandler(async (req, res) => {
  * POST /api/auth/register
  */
 export const register = asyncHandler(async (req, res) => {
-  const { name, email, password, phone, role = "user" } = req.body;
+  const { name, email, password, phone, role = "user", referralCode } = req.body;
 
   if (!name || !email || !password) {
     return errorResponse(res, 400, "Name, email, and password are required");
@@ -432,6 +544,11 @@ export const register = asyncHandler(async (req, res) => {
     }
   }
 
+  const referrer =
+    userRole === "user" && referralCode
+      ? await resolveReferrerByCode(referralCode)
+      : null;
+
   // Create new user
   const user = await User.create({
     name,
@@ -440,7 +557,14 @@ export const register = asyncHandler(async (req, res) => {
     phone: phone || null,
     role: userRole,
     signupMethod: "email", // Email/password registration
+    ...(userRole === "user"
+      ? { referralCode: await generateUniqueReferralCode(name) }
+      : {}),
   });
+
+  if (referrer) {
+    await applyReferralReward({ newUser: user, referrer });
+  }
 
   // Generate tokens
   const tokens = jwtService.generateTokens({
@@ -483,6 +607,7 @@ export const register = asyncHandler(async (req, res) => {
       role: user.role,
       profileImage: user.profileImage,
       signupMethod: user.signupMethod,
+      referralCode: user.referralCode,
     },
   });
 });
@@ -544,6 +669,8 @@ export const login = asyncHandler(async (req, res) => {
     return errorResponse(res, 401, "Invalid email or password");
   }
 
+  await ensureReferralCodeForUser(user);
+
   // Generate tokens
   const tokens = jwtService.generateTokens({
     userId: user._id.toString(),
@@ -575,6 +702,7 @@ export const login = asyncHandler(async (req, res) => {
       role: user.role,
       profileImage: user.profileImage,
       signupMethod: user.signupMethod,
+      referralCode: user.referralCode,
     },
   });
 });
@@ -654,6 +782,8 @@ export const resetPassword = asyncHandler(async (req, res) => {
  * GET /api/auth/me
  */
 export const getCurrentUser = asyncHandler(async (req, res) => {
+  await ensureReferralCodeForUser(req.user);
+
   // User is attached by authenticate middleware
   return successResponse(res, 200, "User retrieved successfully", {
     user: {
@@ -667,6 +797,9 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
       signupMethod: req.user.signupMethod,
       preferences: req.user.preferences,
       wallet: req.user.wallet,
+      referralCode: req.user.referralCode,
+      referredBy: req.user.referredBy,
+      referredAt: req.user.referredAt,
       // Include additional profile fields
       dateOfBirth: req.user.dateOfBirth,
       anniversary: req.user.anniversary,
@@ -680,7 +813,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
  * POST /api/auth/firebase/google-login
  */
 export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
-  const { idToken, role = "restaurant" } = req.body;
+  const { idToken, role = "restaurant", referralCode } = req.body;
 
   if (!idToken) {
     return errorResponse(res, 400, "Firebase ID token is required");
@@ -790,6 +923,11 @@ export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
         role: user.role,
       });
     } else {
+      const referrer =
+        userRole === "user" && referralCode
+          ? await resolveReferrerByCode(referralCode)
+          : null;
+
       // Auto-register new user based on Firebase data
       const userData = {
         name: name.trim(),
@@ -800,10 +938,16 @@ export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
         signupMethod: "google",
         profileImage: picture || null,
         isActive: true,
+        ...(userRole === "user"
+          ? { referralCode: await generateUniqueReferralCode(name) }
+          : {}),
       };
 
       try {
         user = await User.create(userData);
+        if (referrer) {
+          await applyReferralReward({ newUser: user, referrer });
+        }
 
         logger.info("New user registered via Firebase Google login", {
           firebaseUid,
@@ -860,6 +1004,8 @@ export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
       );
     }
 
+    await ensureReferralCodeForUser(user);
+
     // Generate JWT tokens for our app
     const tokens = jwtService.generateTokens({
       userId: user._id.toString(),
@@ -890,6 +1036,7 @@ export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
           role: user.role,
           profileImage: user.profileImage,
           signupMethod: user.signupMethod,
+          referralCode: user.referralCode,
         },
       },
     );
@@ -1042,6 +1189,9 @@ export const googleCallback = asyncHandler(async (req, res) => {
         role: userRole,
         signupMethod: "google",
         profileImage: googleUser.picture || null,
+        ...(userRole === "user"
+          ? { referralCode: await generateUniqueReferralCode(googleUser.name) }
+          : {}),
       };
 
       user = await User.create(userData);
@@ -1051,6 +1201,8 @@ export const googleCallback = asyncHandler(async (req, res) => {
         role: userRole,
       });
     }
+
+    await ensureReferralCodeForUser(user);
 
     // Generate JWT tokens
     const jwtTokens = jwtService.generateTokens({
@@ -1088,6 +1240,7 @@ export const googleCallback = asyncHandler(async (req, res) => {
       role: user.role,
       profileImage: user.profileImage,
       signupMethod: user.signupMethod,
+      referralCode: user.referralCode,
     };
 
     const redirectUrl = `${frontendUrl}${redirectPath}?token=${jwtTokens.accessToken}&user=${encodeURIComponent(JSON.stringify(userData))}`;

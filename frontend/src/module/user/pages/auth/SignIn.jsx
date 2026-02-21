@@ -51,6 +51,7 @@ export default function SignIn() {
     countryCode: "+91",
     email: "",
     name: "",
+    referralCode: "",
   })
   const [errors, setErrors] = useState({
     phone: "",
@@ -60,6 +61,13 @@ export default function SignIn() {
   const [isLoading, setIsLoading] = useState(false)
   const [apiError, setApiError] = useState("")
   const redirectHandledRef = useRef(false)
+  const getPendingReferralCode = () => {
+    const code = String(sessionStorage.getItem("pendingReferralCode") || "").trim().toUpperCase()
+    return code || null
+  }
+  const clearPendingReferralCode = () => {
+    sessionStorage.removeItem("pendingReferralCode")
+  }
 
   // Helper function to process signed-in user
   const processSignedInUser = async (user, source = "unknown") => {
@@ -82,7 +90,7 @@ export default function SignIn() {
       const idToken = await user.getIdToken()
       console.log(`✅ Got ID token from ${source}, calling backend...`)
 
-      const response = await authAPI.firebaseGoogleLogin(idToken, "user")
+      const response = await authAPI.firebaseGoogleLogin(idToken, "user", getPendingReferralCode())
       const data = response?.data?.data || {}
 
       console.log(`✅ Backend response from ${source}:`, {
@@ -95,6 +103,7 @@ export default function SignIn() {
       const appUser = data.user
 
       if (accessToken && appUser) {
+        clearPendingReferralCode()
         setAuthData("user", accessToken, appUser)
         window.dispatchEvent(new Event("userAuthChanged"))
 
@@ -309,7 +318,7 @@ export default function SignIn() {
         const idToken = await user.getIdToken()
         console.log(`✅ Got ID token from ${source}, calling backend...`)
 
-        const response = await authAPI.firebaseGoogleLogin(idToken, "user")
+        const response = await authAPI.firebaseGoogleLogin(idToken, "user", getPendingReferralCode())
         const data = response?.data?.data || {}
 
         console.log(`✅ Backend response from ${source}:`, {
@@ -322,6 +331,7 @@ export default function SignIn() {
         const appUser = data.user
 
         if (accessToken && appUser) {
+          clearPendingReferralCode()
           setAuthData("user", accessToken, appUser)
           window.dispatchEvent(new Event("userAuthChanged"))
 
@@ -442,7 +452,8 @@ export default function SignIn() {
             ...prev,
             phone: phoneDigits,
             name: data.name || prev.name,
-            email: data.email || prev.email
+            email: data.email || prev.email,
+            referralCode: data.referralCode || prev.referralCode,
           }))
           if (data.method) setAuthMethod(data.method)
         }
@@ -451,6 +462,16 @@ export default function SignIn() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    const refCode = searchParams.get("ref")
+    if (refCode) {
+      setFormData((prev) => ({
+        ...prev,
+        referralCode: String(refCode).trim().toUpperCase(),
+      }))
+    }
+  }, [searchParams])
 
   // Get selected country details dynamically
   const selectedCountry = countryCodes.find(c => c.code === formData.countryCode) || countryCodes[2] // Default to India (+91)
@@ -572,6 +593,9 @@ export default function SignIn() {
         phone: fullPhone,
         email: email,
         name: isSignUp ? formData.name.trim() : null,
+        referralCode: isSignUp
+          ? String(formData.referralCode || "").trim().toUpperCase()
+          : null,
         isSignUp,
         module: "user",
       }
@@ -596,6 +620,14 @@ export default function SignIn() {
     redirectHandledRef.current = false // Reset flag when starting new sign-in
 
     try {
+      const queryReferralCode = String(searchParams.get("ref") || "").trim().toUpperCase()
+      const normalizedReferralCode = String(formData.referralCode || queryReferralCode || "").trim().toUpperCase()
+      if (isSignUp && normalizedReferralCode) {
+        sessionStorage.setItem("pendingReferralCode", normalizedReferralCode)
+      } else {
+        clearPendingReferralCode()
+      }
+
       // Ensure Firebase is initialized before use
       ensureFirebaseInitialized()
 
@@ -657,8 +689,9 @@ export default function SignIn() {
   const toggleMode = () => {
     const newMode = isSignUp ? "signin" : "signup"
     navigate(`/user/auth/sign-in?mode=${newMode}`, { replace: true })
+    clearPendingReferralCode()
     // Reset form
-    setFormData({ phone: "", countryCode: "+91", email: "", name: "" })
+    setFormData({ phone: "", countryCode: "+91", email: "", name: "", referralCode: "" })
     setErrors({ phone: "", email: "", name: "" })
   }
 
@@ -723,6 +756,19 @@ export default function SignIn() {
                     <span>{errors.name}</span>
                   </div>
                 )}
+                <Input
+                  id="referralCode"
+                  name="referralCode"
+                  placeholder="Referral code (optional)"
+                  value={formData.referralCode}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      referralCode: e.target.value.toUpperCase(),
+                    }))
+                  }
+                  className="text-base md:text-lg h-12 md:h-14 bg-white dark:bg-[#1a1a1a] text-black dark:text-white border-gray-300 dark:border-gray-700 transition-colors"
+                />
               </div>
             )}
 

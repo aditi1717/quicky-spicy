@@ -177,9 +177,20 @@ export default function OTP() {
       const phone = authData?.method === "phone" ? authData.phone : null
       const email = authData?.method === "email" ? authData.email : null
       const purpose = authData?.isSignUp ? "register" : "login"
+      const providedName = authData?.isSignUp ? authData?.name || null : null
+      const referralCode = authData?.isSignUp ? authData?.referralCode : null
 
       // First attempt: verify OTP for login/register with user role
-      const response = await authAPI.verifyOTP(phone, code, purpose, null, email, "user")
+      const response = await authAPI.verifyOTP(
+        phone,
+        code,
+        purpose,
+        providedName,
+        email,
+        "user",
+        null,
+        referralCode,
+      )
       const data = response?.data?.data || {}
 
       // If backend tells us this is a new user, ask for name
@@ -252,9 +263,19 @@ export default function OTP() {
       const phone = authData?.method === "phone" ? authData.phone : null
       const email = authData?.method === "email" ? authData.email : null
       const purpose = authData?.isSignUp ? "register" : "login"
+      const referralCode = authData?.isSignUp ? authData?.referralCode : null
 
       // Second call with name to auto-register and login
-      const response = await authAPI.verifyOTP(phone, verifiedOtp, purpose, trimmedName, email, "user")
+      const response = await authAPI.verifyOTP(
+        phone,
+        verifiedOtp,
+        purpose,
+        trimmedName,
+        email,
+        "user",
+        null,
+        referralCode,
+      )
       const data = response?.data?.data || {}
 
       const accessToken = data.accessToken

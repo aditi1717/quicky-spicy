@@ -17,6 +17,7 @@ import { API_BASE_URL } from "@/lib/api/config"
 import { initRazorpayPayment } from "@/lib/utils/razorpay"
 import { toast } from "sonner"
 import { getCompanyNameAsync } from "@/lib/utils/businessSettings"
+import zoopSound from "@/assets/audio/zomato_sms.mp3"
 
 
 // Removed hardcoded suggested items - now fetching approved addons from backend
@@ -57,6 +58,7 @@ const formatFullAddress = (address) => {
 
 export default function Cart() {
   const navigate = useNavigate()
+  const orderSuccessAudioRef = useRef(null)
 
   // Defensive check: Ensure CartProvider is available
   let cartContext;
@@ -128,6 +130,29 @@ export default function Cart() {
   const [showOrderSuccess, setShowOrderSuccess] = useState(false)
   const [placedOrderId, setPlacedOrderId] = useState(null)
   const [selectedAddressId, setSelectedAddressId] = useState(null)
+
+  useEffect(() => {
+    const audio = new Audio(zoopSound)
+    audio.preload = "auto"
+    audio.volume = 0.8
+    orderSuccessAudioRef.current = audio
+
+    return () => {
+      if (orderSuccessAudioRef.current) {
+        orderSuccessAudioRef.current.pause()
+        orderSuccessAudioRef.current = null
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!showOrderSuccess || !orderSuccessAudioRef.current) return
+
+    orderSuccessAudioRef.current.currentTime = 0
+    orderSuccessAudioRef.current.play().catch((error) => {
+      console.warn("Order success sound blocked by browser:", error?.message || error)
+    })
+  }, [showOrderSuccess])
 
   // Restaurant and pricing state
   const [restaurantData, setRestaurantData] = useState(null)

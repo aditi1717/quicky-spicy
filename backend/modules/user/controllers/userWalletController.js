@@ -45,6 +45,13 @@ export const getWallet = asyncHandler(async (req, res) => {
     const allTransactions = wallet.transactions
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
+    const mapMetadata = (metadata) => {
+      if (!metadata) return null;
+      if (metadata instanceof Map) return Object.fromEntries(metadata.entries());
+      if (typeof metadata.toObject === 'function') return metadata.toObject();
+      return metadata;
+    };
+
     // Map transactions for frontend
     const transactions = allTransactions.map(t => ({
       id: t._id,
@@ -58,8 +65,19 @@ export const getWallet = asyncHandler(async (req, res) => {
       orderId: t.orderId,
       paymentMethod: t.paymentMethod,
       paymentGateway: t.paymentGateway,
-      paymentId: t.paymentId
+      paymentId: t.paymentId,
+      metadata: mapMetadata(t.metadata)
     }));
+
+    const referralEarnings = transactions
+      .filter(
+        (t) =>
+          t.type === 'addition' &&
+          t.status === 'Completed' &&
+          (t?.metadata?.source === 'referral_signup' ||
+            String(t.description || '').toLowerCase().startsWith('referral reward'))
+      )
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
     const walletData = {
       balance: wallet.balance || 0,
@@ -67,6 +85,7 @@ export const getWallet = asyncHandler(async (req, res) => {
       totalAdded: wallet.totalAdded || 0,
       totalSpent: wallet.totalSpent || 0,
       totalRefunded: wallet.totalRefunded || 0,
+      referralEarnings,
       transactions: transactions,
       totalTransactions: wallet.transactions.length
     };
@@ -138,6 +157,13 @@ export const getTransactions = asyncHandler(async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const paginatedTransactions = transactions.slice(skip, skip + parseInt(limit));
 
+    const mapMetadata = (metadata) => {
+      if (!metadata) return null;
+      if (metadata instanceof Map) return Object.fromEntries(metadata.entries());
+      if (typeof metadata.toObject === 'function') return metadata.toObject();
+      return metadata;
+    };
+
     return successResponse(res, 200, 'Transactions retrieved successfully', {
       transactions: paginatedTransactions.map(t => ({
         id: t._id,
@@ -152,6 +178,7 @@ export const getTransactions = asyncHandler(async (req, res) => {
         paymentMethod: t.paymentMethod,
         paymentGateway: t.paymentGateway,
         paymentId: t.paymentId,
+        metadata: mapMetadata(t.metadata),
         processedAt: t.processedAt,
         failureReason: t.failureReason
       })),
