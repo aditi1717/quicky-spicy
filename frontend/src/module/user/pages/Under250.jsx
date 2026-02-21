@@ -45,7 +45,7 @@ export default function Under250() {
   const sortOptions = [
     { id: null, label: 'Relevance' },
     { id: 'rating-high', label: 'Rating: High to Low' },
-    { id: 'delivery-time-low', label: 'Delivery Time: Low to High' },
+    { id: 'delivery-time-low', label: 'Estimated Time: Low to High' },
     { id: 'distance-low', label: 'Distance: Low to High' },
   ]
 

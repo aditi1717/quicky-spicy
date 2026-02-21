@@ -1115,21 +1115,31 @@ export const confirmOrderId = asyncHandler(async (req, res) => {
     if (!orderMongoId) {
       return errorResponse(res, 500, 'Order ID not found in order object');
     }
+    const now = new Date();
+    const readyTimestamp = order?.tracking?.ready?.timestamp
+      ? new Date(order.tracking.ready.timestamp)
+      : now;
+
     const updateData = {
       'deliveryState.status': 'order_confirmed',
       'deliveryState.currentPhase': 'en_route_to_delivery',
-      'deliveryState.orderIdConfirmedAt': new Date(),
+      'deliveryState.orderIdConfirmedAt': now,
       'deliveryState.routeToDelivery': {
         coordinates: routeData.coordinates,
         distance: routeData.distance,
         duration: routeData.duration,
-        calculatedAt: new Date(),
+        calculatedAt: now,
         method: routeData.method
+      },
+      // Ensure "ready for pickup" is reflected before moving to out_for_delivery.
+      'tracking.ready': {
+        status: true,
+        timestamp: readyTimestamp
       },
       status: 'out_for_delivery',
       'tracking.outForDelivery': {
         status: true,
-        timestamp: new Date()
+        timestamp: now
       }
     };
 

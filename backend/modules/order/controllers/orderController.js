@@ -360,9 +360,13 @@ export const createOrder = async (req, res) => {
           userLocation
         });
 
-        // Add preparation time to ETA (use max preparation time)
-        const finalMinETA = etaResult.minETA + maxPreparationTime;
-        const finalMaxETA = etaResult.maxETA + maxPreparationTime;
+        // Keep customer ETA as: item preparation time + delivery ETA
+        // (eta service also carries restaurant-configured prep in breakdown.restaurantPrepTime)
+        const restaurantConfiguredPrep = etaResult?.breakdown?.restaurantPrepTime || 0;
+        const deliveryMinETA = Math.max(1, etaResult.minETA - restaurantConfiguredPrep);
+        const deliveryMaxETA = Math.max(deliveryMinETA, etaResult.maxETA - restaurantConfiguredPrep);
+        const finalMinETA = deliveryMinETA + maxPreparationTime;
+        const finalMaxETA = deliveryMaxETA + maxPreparationTime;
 
         // Update order with ETA (including preparation time)
         order.eta = {
@@ -391,7 +395,7 @@ export const createOrder = async (req, res) => {
           orderId: order.orderId,
           eta: `${finalMinETA}-${finalMaxETA} mins`,
           preparationTime: maxPreparationTime,
-          baseETA: `${etaResult.minETA}-${etaResult.maxETA} mins`
+          deliveryETA: `${deliveryMinETA}-${deliveryMaxETA} mins`
         });
       } else {
         logger.warn('⚠️ Could not calculate ETA - missing location data');

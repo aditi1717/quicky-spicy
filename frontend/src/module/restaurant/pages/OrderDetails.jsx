@@ -169,6 +169,15 @@ export default function OrderDetails() {
             paymentStatus = order.status === "delivered" ? "PAID" : "COD"
           }
           
+          const statusLower = String(order.status || "").toLowerCase()
+          const reached = {
+            confirmed: order.tracking?.confirmed?.status || ["confirmed", "preparing", "ready", "out_for_delivery", "delivered"].includes(statusLower),
+            preparing: order.tracking?.preparing?.status || ["preparing", "ready", "out_for_delivery", "delivered"].includes(statusLower),
+            ready: order.tracking?.ready?.status || ["ready", "out_for_delivery", "delivered"].includes(statusLower),
+            outForDelivery: order.tracking?.outForDelivery?.status || ["out_for_delivery", "delivered"].includes(statusLower),
+            delivered: order.tracking?.delivered?.status || statusLower === "delivered"
+          }
+
           // Transform API order data to match component structure
           const transformedOrder = {
             id: order.orderId || order._id,
@@ -198,12 +207,12 @@ export default function OrderDetails() {
             reason: order.cancellationReason || '',
             timeline: [
               { event: 'Order placed', timestamp: new Date(order.createdAt).toLocaleString('en-GB'), status: 'completed' },
-              ...(order.status === 'confirmed' ? [{ event: 'Order confirmed', timestamp: order.tracking?.confirmed?.timestamp ? new Date(order.tracking.confirmed.timestamp).toLocaleString('en-GB') : '', status: 'completed' }] : []),
-              ...(order.status === 'preparing' ? [{ event: 'Preparing', timestamp: order.tracking?.preparing?.timestamp ? new Date(order.tracking.preparing.timestamp).toLocaleString('en-GB') : '', status: 'completed' }] : []),
-              ...(order.status === 'ready' ? [{ event: 'Ready for pickup', timestamp: order.tracking?.ready?.timestamp ? new Date(order.tracking.ready.timestamp).toLocaleString('en-GB') : '', status: 'completed' }] : []),
-              ...(order.status === 'out_for_delivery' ? [{ event: 'Out for delivery', timestamp: order.tracking?.outForDelivery?.timestamp ? new Date(order.tracking.outForDelivery.timestamp).toLocaleString('en-GB') : '', status: 'completed' }] : []),
-              ...(order.status === 'delivered' ? [{ event: 'Delivered', timestamp: order.tracking?.delivered?.timestamp ? new Date(order.tracking.delivered.timestamp).toLocaleString('en-GB') : '', status: 'completed' }] : []),
-              ...(order.status === 'cancelled' ? [{ event: 'Cancelled', timestamp: order.cancelledAt ? new Date(order.cancelledAt).toLocaleString('en-GB') : '', status: 'rejected', reason: order.cancellationReason }] : [])
+              ...(reached.confirmed ? [{ event: 'Order confirmed', timestamp: order.tracking?.confirmed?.timestamp ? new Date(order.tracking.confirmed.timestamp).toLocaleString('en-GB') : '', status: 'completed' }] : []),
+              ...(reached.preparing ? [{ event: 'Preparing', timestamp: order.tracking?.preparing?.timestamp ? new Date(order.tracking.preparing.timestamp).toLocaleString('en-GB') : '', status: 'completed' }] : []),
+              ...(reached.ready ? [{ event: 'Ready for pickup', timestamp: order.tracking?.ready?.timestamp ? new Date(order.tracking.ready.timestamp).toLocaleString('en-GB') : '', status: 'completed' }] : []),
+              ...(reached.outForDelivery ? [{ event: 'Out for delivery', timestamp: order.tracking?.outForDelivery?.timestamp ? new Date(order.tracking.outForDelivery.timestamp).toLocaleString('en-GB') : '', status: 'completed' }] : []),
+              ...(reached.delivered ? [{ event: 'Delivered', timestamp: order.tracking?.delivered?.timestamp ? new Date(order.tracking.delivered.timestamp).toLocaleString('en-GB') : '', status: 'completed' }] : []),
+              ...(statusLower === 'cancelled' ? [{ event: 'Cancelled', timestamp: order.cancelledAt ? new Date(order.cancelledAt).toLocaleString('en-GB') : '', status: 'rejected', reason: order.cancellationReason }] : [])
             ]
           }
           

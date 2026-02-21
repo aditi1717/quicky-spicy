@@ -527,7 +527,7 @@ export default function DiningExplore50() {
                 {/* Time Tab */}
                 {activeFilterTab === 'time' && (
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Delivery Time</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Estimated Time</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => toggleFilter('delivery-under-30')}
