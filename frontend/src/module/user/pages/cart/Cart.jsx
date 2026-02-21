@@ -92,6 +92,7 @@ export default function Cart() {
   const [showCoupons, setShowCoupons] = useState(false)
   const [appliedCoupon, setAppliedCoupon] = useState(null)
   const [couponCode, setCouponCode] = useState("")
+  const [manualCouponCode, setManualCouponCode] = useState("")
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("razorpay") // razorpay | cash | wallet
   const [walletBalance, setWalletBalance] = useState(0)
   const [isLoadingWallet, setIsLoadingWallet] = useState(false)
@@ -141,6 +142,7 @@ export default function Cart() {
   // Coupons state - fetched from backend
   const [availableCoupons, setAvailableCoupons] = useState([])
   const [loadingCoupons, setLoadingCoupons] = useState(false)
+  const [userOrderCount, setUserOrderCount] = useState(0)
 
   // Fee settings from database (used as fallback if pricing not available)
   const [feeSettings, setFeeSettings] = useState({
@@ -533,10 +535,17 @@ export default function Cart() {
                   code: coupon.couponCode,
                   discount: coupon.originalPrice - coupon.discountedPrice,
                   discountPercentage: coupon.discountPercentage,
+                  discountDisplay: coupon.discountType === "percentage"
+                    ? `${coupon.discountPercentage}% OFF`
+                    : `₹${Math.max(0, (coupon.originalPrice || 0) - (coupon.discountedPrice || 0))} OFF`,
                   minOrder: coupon.minOrderValue || 0,
-                  description: `Save ₹${coupon.originalPrice - coupon.discountedPrice} with '${coupon.couponCode}'`,
+                  description: coupon.discountType === "percentage"
+                    ? `${coupon.discountPercentage}% OFF with '${coupon.couponCode}'`
+                    : `Save ₹${Math.max(0, (coupon.originalPrice || 0) - (coupon.discountedPrice || 0))} with '${coupon.couponCode}'`,
                   originalPrice: coupon.originalPrice,
                   discountedPrice: coupon.discountedPrice,
+                  customerGroup: coupon.customerGroup || "all",
+                  isGlobalCoupon: Boolean(coupon.isGlobalCoupon),
                   itemId: cartItem.id,
                   itemName: cartItem.name,
                 })
@@ -627,6 +636,24 @@ export default function Cart() {
       }
     }
     fetchWalletBalance()
+  }, [])
+
+  // Fetch user order count (used for first-time coupon eligibility)
+  useEffect(() => {
+    const fetchOrderCount = async () => {
+      try {
+        const response = await userAPI.getOrders({ page: 1, limit: 1 })
+        if (response?.data?.success) {
+          const totalOrders = response?.data?.data?.pagination?.total || 0
+          setUserOrderCount(totalOrders)
+        }
+      } catch (error) {
+        console.error("Error fetching user order count:", error)
+        setUserOrderCount(0)
+      }
+    }
+
+    fetchOrderCount()
   }, [])
 
   // Fetch fee settings on mount
@@ -778,9 +805,15 @@ export default function Cart() {
   }
 
   const handleApplyCoupon = async (coupon) => {
+    if (coupon?.customerGroup === "new" && userOrderCount > 0) {
+      toast.error("This coupon is only for first-time users")
+      return
+    }
+
     if (subtotal >= coupon.minOrder) {
       setAppliedCoupon(coupon)
       setCouponCode(coupon.code)
+      setManualCouponCode(coupon.code)
       setShowCoupons(false)
 
       // Recalculate pricing with new coupon
@@ -814,10 +847,82 @@ export default function Cart() {
     }
   }
 
+  const handleApplyCouponCode = async () => {
+    const inputCode = manualCouponCode.trim().toUpperCase()
+    if (!inputCode) {
+      toast.error("Enter coupon code")
+      return
+    }
+
+    if (cart.length === 0 || !hasSavedAddress) {
+      toast.error("Add items and delivery address first")
+      return
+    }
+
+    const matchedCoupon = availableCoupons.find(
+      (coupon) => String(coupon.code || "").toUpperCase() === inputCode,
+    )
+
+    // If we know this is first-time only and user already ordered, block early.
+    if (matchedCoupon?.customerGroup === "new" && userOrderCount > 0) {
+      toast.error("This coupon is only for first-time users")
+      return
+    }
+
+    try {
+      const items = cart.map(item => ({
+        itemId: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity || 1,
+        image: item.image,
+        description: item.description,
+        isVeg: item.isVeg !== false
+      }))
+
+      const response = await orderAPI.calculateOrder({
+        items,
+        restaurantId: restaurantData?.restaurantId || restaurantData?._id || restaurantId || null,
+        deliveryAddress: defaultAddress,
+        couponCode: inputCode,
+        deliveryFleet: deliveryFleet || 'standard'
+      })
+
+      const pricingData = response?.data?.data?.pricing
+      if (!pricingData) {
+        toast.error("Unable to validate coupon")
+        return
+      }
+
+      if (!pricingData.appliedCoupon) {
+        toast.error("Invalid or unavailable coupon code")
+        setCouponCode("")
+        return
+      }
+
+      setPricing(pricingData)
+      setCouponCode(inputCode)
+      setAppliedCoupon(
+        matchedCoupon || {
+          code: inputCode,
+          discount: pricingData.appliedCoupon.discount || 0,
+          minOrder: 0,
+          customerGroup: "all",
+        },
+      )
+      setShowCoupons(false)
+      toast.success("Coupon applied")
+    } catch (error) {
+      console.error("Error applying coupon code:", error)
+      toast.error("Failed to apply coupon")
+    }
+  }
+
 
   const handleRemoveCoupon = async () => {
     setAppliedCoupon(null)
     setCouponCode("")
+    setManualCouponCode("")
 
     // Recalculate pricing without coupon
     if (cart.length > 0 && hasSavedAddress) {
@@ -1565,13 +1670,33 @@ export default function Cart() {
                   </div>
                 ) : availableCoupons.length > 0 ? (
                   <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <input
+                        type="text"
+                        value={manualCouponCode}
+                        onChange={(e) => setManualCouponCode(e.target.value.toUpperCase())}
+                        placeholder="Enter coupon code"
+                        className="flex-1 h-8 md:h-9 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0a0a0a] px-2 md:px-3 text-xs md:text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:border-[#EB590E]"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 md:h-9 text-xs md:text-sm border-[#EB590E] dark:border-[#EB590E]/50 text-[#EB590E] dark:text-[#EB590E] hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                        onClick={handleApplyCouponCode}
+                      >
+                        APPLY
+                      </Button>
+                    </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 md:gap-3">
                         <Percent className="h-4 w-4 md:h-5 md:w-5 text-gray-600 dark:text-gray-400" />
                         <div>
                           <p className="text-sm md:text-base font-medium text-gray-800 dark:text-gray-200">
-                            Save ₹{availableCoupons[0].discount} with '{availableCoupons[0].code}'
+                            {availableCoupons[0].discountDisplay || `Save ₹${availableCoupons[0].discount}`} with '{availableCoupons[0].code}'
                           </p>
+                          {availableCoupons[0].customerGroup === "new" && (
+                            <p className="text-[11px] md:text-xs text-orange-600 dark:text-orange-400">First-time users only</p>
+                          )}
                           {availableCoupons.length > 1 && (
                             <button onClick={() => setShowCoupons(!showCoupons)} className="text-xs md:text-sm text-blue-600 dark:text-blue-400 font-medium">
                               View all coupons →
@@ -1584,9 +1709,13 @@ export default function Cart() {
                         variant="outline"
                         className="h-7 md:h-8 text-xs md:text-sm border-[#EB590E] dark:border-[#EB590E]/50 text-[#EB590E] dark:text-[#EB590E] hover:bg-orange-50 dark:hover:bg-orange-900/20"
                         onClick={() => handleApplyCoupon(availableCoupons[0])}
-                        disabled={subtotal < availableCoupons[0].minOrder}
+                        disabled={subtotal < availableCoupons[0].minOrder || (availableCoupons[0].customerGroup === "new" && userOrderCount > 0)}
                       >
-                        {subtotal < availableCoupons[0].minOrder ? `Min ₹${availableCoupons[0].minOrder}` : 'APPLY'}
+                        {availableCoupons[0].customerGroup === "new" && userOrderCount > 0
+                          ? "Not Eligible"
+                          : subtotal < availableCoupons[0].minOrder
+                            ? `Min ₹${availableCoupons[0].minOrder}`
+                            : 'APPLY'}
                       </Button>
                     </div>
                   </div>
@@ -1605,15 +1734,22 @@ export default function Cart() {
                         <div>
                           <p className="text-sm md:text-base font-medium text-gray-800 dark:text-gray-200">{coupon.code}</p>
                           <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">{coupon.description}</p>
+                          {coupon.customerGroup === "new" && (
+                            <p className="text-[11px] md:text-xs text-orange-600 dark:text-orange-400">First-time users only</p>
+                          )}
                         </div>
                         <Button
                           size="sm"
                           variant="outline"
                           className="h-6 md:h-7 text-xs md:text-sm border-[#EB590E] dark:border-[#EB590E]/50 text-[#EB590E] dark:text-[#EB590E] hover:bg-orange-50 dark:hover:bg-[#EB590E]/10"
                           onClick={() => handleApplyCoupon(coupon)}
-                          disabled={subtotal < coupon.minOrder}
+                          disabled={subtotal < coupon.minOrder || (coupon.customerGroup === "new" && userOrderCount > 0)}
                         >
-                          {subtotal < coupon.minOrder ? `Min ₹${coupon.minOrder}` : 'APPLY'}
+                          {coupon.customerGroup === "new" && userOrderCount > 0
+                            ? "Not Eligible"
+                            : subtotal < coupon.minOrder
+                              ? `Min ₹${coupon.minOrder}`
+                              : 'APPLY'}
                         </Button>
                       </div>
                     ))}

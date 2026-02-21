@@ -28,6 +28,7 @@ import {
   deleteRestaurant,
   updateRestaurantDiningSettings,
   getAllOffers,
+  createAdminOffer,
   getRestaurantAnalytics,
   getCustomerWalletReport,
 } from "../controllers/adminController.js";
@@ -403,6 +404,7 @@ router.post("/food-approvals/:id/reject", rejectFoodItem);
 
 // Offers Management
 router.get("/offers", getAllOffers);
+router.post("/offers", createAdminOffer);
 
 // Zone Management
 router.use("/zones", zoneRoutes);
