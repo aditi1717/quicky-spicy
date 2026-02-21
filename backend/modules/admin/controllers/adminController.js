@@ -2244,6 +2244,7 @@ export const getAllOffers = asyncHandler(async (req, res) => {
             dishId: item.itemId || "N/A",
             couponCode: item.couponCode || "N/A",
             discountType: offer.discountType || "percentage",
+            customerGroup: offer.customerGroup || "all",
             discountPercentage: item.discountPercentage || 0,
             originalPrice: item.originalPrice || 0,
             discountedPrice: item.discountedPrice || 0,
@@ -2281,6 +2282,152 @@ export const getAllOffers = asyncHandler(async (req, res) => {
       error: error.stack,
     });
     return errorResponse(res, 500, "Failed to fetch offers");
+  }
+});
+
+/**
+ * Create Coupon Offer (Admin)
+ * POST /api/admin/offers
+ */
+export const createAdminOffer = asyncHandler(async (req, res) => {
+  try {
+    const {
+      couponCode,
+      discountType = "percentage",
+      discountValue,
+      customerScope = "all",
+      restaurantScope = "all",
+      restaurantId,
+      endDate,
+      minOrderValue = 0,
+    } = req.body;
+
+    if (!couponCode || typeof couponCode !== "string") {
+      return errorResponse(res, 400, "Coupon code is required");
+    }
+
+    const normalizedCode = couponCode.trim().toUpperCase();
+    if (!normalizedCode) {
+      return errorResponse(res, 400, "Coupon code is required");
+    }
+
+    if (!["percentage", "flat-price"].includes(discountType)) {
+      return errorResponse(
+        res,
+        400,
+        "discountType must be percentage or flat-price",
+      );
+    }
+
+    const parsedDiscountValue = Number(discountValue);
+    if (!Number.isFinite(parsedDiscountValue) || parsedDiscountValue <= 0) {
+      return errorResponse(res, 400, "discountValue must be greater than 0");
+    }
+
+    if (!["all", "first-time"].includes(customerScope)) {
+      return errorResponse(res, 400, "customerScope must be all or first-time");
+    }
+
+    if (!["all", "selected"].includes(restaurantScope)) {
+      return errorResponse(
+        res,
+        400,
+        "restaurantScope must be all or selected",
+      );
+    }
+
+    if (restaurantScope === "selected" && !restaurantId) {
+      return errorResponse(
+        res,
+        400,
+        "restaurantId is required for selected restaurant scope",
+      );
+    }
+
+    let restaurants = [];
+    if (restaurantScope === "all") {
+      restaurants = await Restaurant.find({ isActive: true }).select("_id name");
+      if (!restaurants.length) {
+        return errorResponse(res, 404, "No active restaurants found");
+      }
+    } else {
+      if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+        return errorResponse(res, 400, "Invalid restaurantId");
+      }
+      const selectedRestaurant = await Restaurant.findById(restaurantId).select(
+        "_id name",
+      );
+      if (!selectedRestaurant) {
+        return errorResponse(res, 404, "Restaurant not found");
+      }
+      restaurants = [selectedRestaurant];
+    }
+
+    let parsedEndDate = null;
+    if (endDate) {
+      parsedEndDate = new Date(endDate);
+      if (Number.isNaN(parsedEndDate.getTime())) {
+        return errorResponse(res, 400, "Invalid endDate");
+      }
+    }
+
+    const customerGroup = customerScope === "first-time" ? "new" : "all";
+    const now = new Date();
+    const createdOffers = [];
+
+    for (const restaurant of restaurants) {
+      const originalPrice = discountType === "percentage" ? 100 : parsedDiscountValue;
+      const discountPercentage =
+        discountType === "percentage" ? Math.min(parsedDiscountValue, 100) : 100;
+      const discountedPrice =
+        discountType === "percentage"
+          ? Math.max(0, originalPrice - (originalPrice * discountPercentage) / 100)
+          : 0;
+
+      const offer = await Offer.create({
+        restaurant: restaurant._id,
+        goalId: "grow-customers",
+        discountType,
+        customerGroup,
+        offerPreference: "all",
+        offerDays: "all",
+        startDate: now,
+        endDate: parsedEndDate || undefined,
+        targetMealtime: "all",
+        minOrderValue: Number(minOrderValue) || 0,
+        status: "active",
+        items: [
+          {
+            itemId: `admin-coupon-${normalizedCode}-${Date.now()}`,
+            itemName: "All Items",
+            originalPrice,
+            discountPercentage,
+            discountedPrice,
+            couponCode: normalizedCode,
+            image: "",
+            isVeg: false,
+          },
+        ],
+      });
+
+      createdOffers.push({
+        id: offer._id,
+        restaurantId: restaurant._id,
+        restaurantName: restaurant.name,
+      });
+    }
+
+    return successResponse(res, 201, "Coupon created successfully", {
+      createdCount: createdOffers.length,
+      customerScope,
+      restaurantScope,
+      offers: createdOffers,
+    });
+  } catch (error) {
+    logger.error(`Error creating admin coupon: ${error.message}`, {
+      error: error.stack,
+    });
+    return errorResponse(res, 500, "Failed to create coupon");
   }
 });
 

@@ -197,13 +197,21 @@ export const getCouponsByItemId = asyncHandler(async (req, res) => {
     });
   });
 
-  // Find all active offers that include this item
+  // Find all active offers that include this item OR are global coupons
   const allOffers = await Offer.find({
     restaurant: restaurantId,
     status: 'active',
-    'items.itemId': itemId,
+    items: {
+      $elemMatch: {
+        $or: [
+          { itemId },
+          { itemId: 'all' },
+          { itemId: { $regex: /^admin-coupon-/ } },
+        ],
+      },
+    },
   })
-    .select('items discountType minOrderValue startDate endDate status')
+    .select('items discountType minOrderValue startDate endDate status customerGroup')
     .lean();
 
   console.log(`[COUPONS] Found ${allOffers.length} active offers with itemId ${itemId}`);
@@ -231,13 +239,18 @@ export const getCouponsByItemId = asyncHandler(async (req, res) => {
 
   console.log(`[COUPONS] Found ${validOffers.length} valid offers after date filtering`);
 
-  // Extract coupons for this specific item
+  // Extract coupons for this specific item (including global coupons)
   const coupons = [];
   validOffers.forEach(offer => {
     console.log(`[COUPONS] Processing offer ${offer._id} with ${offer.items?.length || 0} items`);
     offer.items.forEach((item, idx) => {
-      console.log(`[COUPONS]   Item ${idx}: itemId="${item.itemId}", searching for="${itemId}", match=${item.itemId === itemId}`);
-      if (item.itemId === itemId) {
+      const isGlobalCoupon =
+        item.itemId === 'all' ||
+        (typeof item.itemId === 'string' && item.itemId.startsWith('admin-coupon-')) ||
+        item.itemName === 'All Items';
+      const isItemMatch = item.itemId === itemId;
+      console.log(`[COUPONS]   Item ${idx}: itemId="${item.itemId}", searching for="${itemId}", match=${isItemMatch || isGlobalCoupon}`);
+      if (isItemMatch || isGlobalCoupon) {
         const coupon = {
           couponCode: item.couponCode,
           discountPercentage: item.discountPercentage,
@@ -245,6 +258,8 @@ export const getCouponsByItemId = asyncHandler(async (req, res) => {
           discountedPrice: item.discountedPrice,
           minOrderValue: offer.minOrderValue || 0,
           discountType: offer.discountType,
+          customerGroup: offer.customerGroup || 'all',
+          isGlobalCoupon,
           startDate: offer.startDate,
           endDate: offer.endDate,
         };
@@ -311,13 +326,21 @@ export const getCouponsByItemIdPublic = asyncHandler(async (req, res) => {
     return errorResponse(res, 500, `Error finding restaurant: ${error.message}`);
   }
 
-  // Find all active offers that include this item for this restaurant
+  // Find all active offers that include this item OR are global coupons for this restaurant
   const allOffers = await Offer.find({
     restaurant: restaurantObjectId,
     status: 'active',
-    'items.itemId': itemId,
+    items: {
+      $elemMatch: {
+        $or: [
+          { itemId },
+          { itemId: 'all' },
+          { itemId: { $regex: /^admin-coupon-/ } },
+        ],
+      },
+    },
   })
-    .select('items discountType minOrderValue startDate endDate status')
+    .select('items discountType minOrderValue startDate endDate status customerGroup')
     .lean();
 
   console.log(`[COUPONS-PUBLIC] Found ${allOffers.length} active offers with itemId ${itemId} for restaurant ${restaurantId}`);
@@ -337,11 +360,16 @@ export const getCouponsByItemIdPublic = asyncHandler(async (req, res) => {
 
   console.log(`[COUPONS-PUBLIC] Found ${validOffers.length} valid offers after date filtering`);
 
-  // Extract coupons for this specific item
+  // Extract coupons for this specific item (including global coupons)
   const coupons = [];
   validOffers.forEach(offer => {
     offer.items.forEach(item => {
-      if (item.itemId === itemId) {
+      const isGlobalCoupon =
+        item.itemId === 'all' ||
+        (typeof item.itemId === 'string' && item.itemId.startsWith('admin-coupon-')) ||
+        item.itemName === 'All Items';
+      const isItemMatch = item.itemId === itemId;
+      if (isItemMatch || isGlobalCoupon) {
         coupons.push({
           couponCode: item.couponCode,
           discountPercentage: item.discountPercentage,
@@ -349,6 +377,8 @@ export const getCouponsByItemIdPublic = asyncHandler(async (req, res) => {
           discountedPrice: item.discountedPrice,
           minOrderValue: offer.minOrderValue || 0,
           discountType: offer.discountType,
+          customerGroup: offer.customerGroup || 'all',
+          isGlobalCoupon,
           startDate: offer.startDate,
           endDate: offer.endDate,
         });

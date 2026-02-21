@@ -1148,6 +1148,11 @@ export const adminAPI = {
     return apiClient.get(API_ENDPOINTS.ADMIN.OFFERS, { params });
   },
 
+  // Create coupon offer from admin
+  createAdminOffer: (data) => {
+    return apiClient.post(API_ENDPOINTS.ADMIN.OFFERS, data);
+  },
+
   // Restaurant Commission Management
   getRestaurantCommissions: (params = {}) => {
     return apiClient.get(API_ENDPOINTS.ADMIN.RESTAURANT_COMMISSION, { params });

@@ -234,26 +234,41 @@ export const calculateOrderPricing = async ({
             if (couponItem) {
               // Check if coupon is valid for items in cart
               const cartItemIds = items.map(item => item.itemId);
-              const isValidForCart = couponItem.itemId && cartItemIds.includes(couponItem.itemId);
+              const isGlobalCoupon =
+                couponItem.itemId === 'all' ||
+                (typeof couponItem.itemId === 'string' && couponItem.itemId.startsWith('admin-coupon-')) ||
+                couponItem.itemName === 'All Items';
+              const isValidForCart = isGlobalCoupon || (couponItem.itemId && cartItemIds.includes(couponItem.itemId));
               
               // Check minimum order value
               const minOrderMet = !offer.minOrderValue || subtotal >= offer.minOrderValue;
               
               if (isValidForCart && minOrderMet) {
-                // Calculate discount based on offer type
-                const itemInCart = items.find(item => item.itemId === couponItem.itemId);
-                if (itemInCart) {
-                  const itemQuantity = itemInCart.quantity || 1;
-                  
-                  // Calculate discount per item
-                  const discountPerItem = couponItem.originalPrice - couponItem.discountedPrice;
-                  
-                  // Apply discount to all quantities of this item
-                  discount = Math.round(discountPerItem * itemQuantity);
-                  
-                  // Ensure discount doesn't exceed item subtotal
-                  const itemSubtotal = (itemInCart.price || 0) * itemQuantity;
-                  discount = Math.min(discount, itemSubtotal);
+                if (isGlobalCoupon) {
+                  // Global coupon applies on order subtotal
+                  if (offer.discountType === 'percentage') {
+                    discount = Math.round(subtotal * ((couponItem.discountPercentage || 0) / 100));
+                  } else {
+                    const flatDiscount = (couponItem.originalPrice || 0) - (couponItem.discountedPrice || 0);
+                    discount = Math.round(flatDiscount);
+                  }
+                  discount = Math.min(Math.max(discount, 0), subtotal);
+                } else {
+                  // Item-specific coupon applies only on matching item
+                  const itemInCart = items.find(item => item.itemId === couponItem.itemId);
+                  if (itemInCart) {
+                    const itemQuantity = itemInCart.quantity || 1;
+                    
+                    // Calculate discount per item
+                    const discountPerItem = couponItem.originalPrice - couponItem.discountedPrice;
+                    
+                    // Apply discount to all quantities of this item
+                    discount = Math.round(discountPerItem * itemQuantity);
+                    
+                    // Ensure discount doesn't exceed item subtotal
+                    const itemSubtotal = (itemInCart.price || 0) * itemQuantity;
+                    discount = Math.min(discount, itemSubtotal);
+                  }
                 }
                 
                 appliedCoupon = {
@@ -264,6 +279,7 @@ export const calculateOrderPricing = async ({
                   type: offer.discountType === 'percentage' ? 'percentage' : 'flat',
                   itemId: couponItem.itemId,
                   itemName: couponItem.itemName,
+                  isGlobalCoupon,
                   originalPrice: couponItem.originalPrice,
                   discountedPrice: couponItem.discountedPrice,
                 };
