@@ -1951,6 +1951,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
 
   const handleAddressFormSubmit = async (e) => {
     e.preventDefault()
+    let addressToSave = null
 
     // Validate required fields (zipCode is optional)
     if (!addressFormData.street || !addressFormData.city || !addressFormData.state) {
@@ -1991,7 +1992,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         return
       }
 
-      const addressToSave = {
+      addressToSave = {
         label: normalizedLabel,
         street: trimmedStreet,
         additionalDetails: (addressFormData.additionalDetails || "").trim(),
@@ -2004,11 +2005,12 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
 
       // Check if an address with the same label already exists
       const existingAddressWithSameLabel = addresses.find(addr => addr.label === normalizedLabel)
+      const existingAddressId = existingAddressWithSameLabel?.id || existingAddressWithSameLabel?._id
 
-      if (existingAddressWithSameLabel) {
+      if (existingAddressWithSameLabel && existingAddressId) {
         // Update existing address instead of creating a new one
         console.log("🔄 Updating existing address with label:", normalizedLabel)
-        await updateAddress(existingAddressWithSameLabel.id, addressToSave)
+        await updateAddress(existingAddressId, addressToSave)
         toast.success(`Address updated for ${normalizedLabel}!`)
       } else {
         // Create new address
@@ -2323,7 +2325,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                 Save address as
               </Label>
               <div className="flex gap-2">
-                {["Home", "Office", "Other"].map((label) => (
+                {["Home", "Work", "Other"].map((label) => (
                   <Button
                     key={label}
                     type="button"

@@ -68,6 +68,19 @@ const DeliveryTrackingMap = ({
     });
   }, [trackingIdsKey]);
 
+  // Fallback source for rider location from order payload (used when socket update is delayed/missed)
+  useEffect(() => {
+    const lat = order?.deliveryState?.currentLocation?.lat;
+    const lng = order?.deliveryState?.currentLocation?.lng;
+    const heading = order?.deliveryState?.currentLocation?.bearing ?? 0;
+
+    if (typeof lat === 'number' && typeof lng === 'number') {
+      const location = { lat, lng, heading };
+      setCurrentLocation(location);
+      setDeliveryBoyLocation(location);
+    }
+  }, [order?.deliveryState?.currentLocation?.lat, order?.deliveryState?.currentLocation?.lng, order?.deliveryState?.currentLocation?.bearing]);
+
   // Load Google Maps API key from backend
   useEffect(() => {
     import('@/lib/utils/googleMapsApiKey.js').then(({ getGoogleMapsApiKey }) => {

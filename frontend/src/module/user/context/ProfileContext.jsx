@@ -4,6 +4,33 @@ import { authAPI, userAPI } from "@/lib/api"
 const ProfileContext = createContext(null)
 
 export function ProfileProvider({ children }) {
+  const getAddressId = (address) => address?.id || address?._id || null
+  const normalizeAddressLabel = (label) => {
+    const normalized = String(label || "").trim().toLowerCase()
+    if (normalized === "home") return "Home"
+    if (normalized === "office" || normalized === "work") return "Office"
+    return "Other"
+  }
+  const normalizeAddress = (address) => {
+    if (!address || typeof address !== "object") return null
+    const id = getAddressId(address)
+    return {
+      ...address,
+      label: normalizeAddressLabel(address.label),
+      ...(id ? { id: String(id) } : {}),
+    }
+  }
+  const dedupeAddressesByLabel = (addressList = []) => {
+    const addressMap = new Map()
+    addressList.forEach((addr, index) => {
+      const normalizedAddress = normalizeAddress(addr)
+      if (!normalizedAddress) return
+      const key = normalizedAddress.label || getAddressId(normalizedAddress) || index
+      // Keep latest address for each label so newly saved Home/Work/Other is visible immediately
+      addressMap.set(key, normalizedAddress)
+    })
+    return Array.from(addressMap.values())
+  }
   const [userProfile, setUserProfile] = useState(() => {
     // First, try to get from localStorage (user_user from auth)
     const userStr = localStorage.getItem("user_user")
@@ -132,15 +159,16 @@ export function ProfileProvider({ children }) {
         try {
           const addressesResponse = await userAPI.getAddresses()
           const addressesData = addressesResponse?.data?.data?.addresses || addressesResponse?.data?.addresses || []
-          setAddresses(addressesData)
-          localStorage.setItem("userAddresses", JSON.stringify(addressesData))
+          const normalizedAddresses = dedupeAddressesByLabel(addressesData)
+          setAddresses(normalizedAddresses)
+          localStorage.setItem("userAddresses", JSON.stringify(normalizedAddresses))
         } catch (addressError) {
           console.error("Error fetching addresses:", addressError)
           // Try to load from localStorage as fallback
           const saved = localStorage.getItem("userAddresses")
           if (saved) {
             try {
-              setAddresses(JSON.parse(saved))
+              setAddresses(dedupeAddressesByLabel(JSON.parse(saved)))
             } catch (e) {
               console.error("Error parsing saved addresses:", e)
             }
@@ -153,7 +181,7 @@ export function ProfileProvider({ children }) {
         const saved = localStorage.getItem("userAddresses")
         if (saved) {
           try {
-            setAddresses(JSON.parse(saved))
+            setAddresses(dedupeAddressesByLabel(JSON.parse(saved)))
           } catch (e) {
             console.error("Error parsing saved addresses:", e)
           }
@@ -184,12 +212,16 @@ export function ProfileProvider({ children }) {
       const newAddress = response?.data?.data?.address || response?.data?.address
       
       if (newAddress) {
+        const normalizedNewAddress = normalizeAddress(newAddress)
         setAddresses((prev) => {
-          const updated = [...prev, newAddress]
+          const filtered = prev.filter(
+            (addr) => normalizeAddressLabel(addr?.label) !== normalizeAddressLabel(normalizedNewAddress?.label)
+          )
+          const updated = dedupeAddressesByLabel([...filtered, normalizedNewAddress])
           localStorage.setItem("userAddresses", JSON.stringify(updated))
           return updated
         })
-        return newAddress
+        return normalizedNewAddress
       }
     } catch (error) {
       console.error("Error adding address:", error)
@@ -203,12 +235,15 @@ export function ProfileProvider({ children }) {
       const updatedAddr = response?.data?.data?.address || response?.data?.address
       
       if (updatedAddr) {
+        const normalizedUpdatedAddress = normalizeAddress(updatedAddr)
         setAddresses((prev) => {
-          const updated = prev.map((addr) => (addr.id === id ? { ...updatedAddr, id } : addr))
+          const updated = dedupeAddressesByLabel(
+            prev.map((addr) => (String(getAddressId(addr)) === String(id) ? normalizedUpdatedAddress : normalizeAddress(addr)))
+          )
           localStorage.setItem("userAddresses", JSON.stringify(updated))
           return updated
         })
-        return updatedAddr
+        return normalizedUpdatedAddress
       }
     } catch (error) {
       console.error("Error updating address:", error)
@@ -220,7 +255,7 @@ export function ProfileProvider({ children }) {
     try {
       await userAPI.deleteAddress(id)
       setAddresses((prev) => {
-        const newAddresses = prev.filter((addr) => addr.id !== id)
+        const newAddresses = prev.filter((addr) => String(getAddressId(addr)) !== String(id))
         localStorage.setItem("userAddresses", JSON.stringify(newAddresses))
         return newAddresses
       })
@@ -234,7 +269,7 @@ export function ProfileProvider({ children }) {
     setAddresses((prev) =>
       prev.map((addr) => ({
         ...addr,
-        isDefault: addr.id === id,
+        isDefault: String(getAddressId(addr)) === String(id),
       }))
     )
   }, [])
@@ -289,7 +324,7 @@ export function ProfileProvider({ children }) {
   }, [paymentMethods])
 
   const getAddressById = useCallback((id) => {
-    return addresses.find((addr) => addr.id === id)
+    return addresses.find((addr) => String(getAddressId(addr)) === String(id))
   }, [addresses])
 
   const getPaymentMethodById = useCallback((id) => {

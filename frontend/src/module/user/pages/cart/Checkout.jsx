@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 
 import { CheckCircle, MapPin, CreditCard, ArrowLeft } from "lucide-react"
@@ -13,18 +13,30 @@ import { Badge } from "@/components/ui/badge"
 import { useCart } from "../../context/CartContext"
 import { useProfile } from "../../context/ProfileContext"
 import { useOrders } from "../../context/OrdersContext"
+import { useLocationSelector } from "../../components/UserLayout"
 
 export default function Checkout() {
   const navigate = useNavigate()
   const { cart, clearCart } = useCart()
-  const { getDefaultAddress, getDefaultPaymentMethod, addresses, paymentMethods } = useProfile()
+  const { getDefaultAddress, getDefaultPaymentMethod, setDefaultAddress, addresses, paymentMethods } = useProfile()
   const { createOrder } = useOrders()
-  const [selectedAddress, setSelectedAddress] = useState(getDefaultAddress()?.id || "")
+  const { openLocationSelector } = useLocationSelector()
+  const getAddressId = (address) => address?.id || address?._id || ""
+  const [selectedAddressId, setSelectedAddressId] = useState(getAddressId(getDefaultAddress()))
   const [selectedPayment, setSelectedPayment] = useState(getDefaultPaymentMethod()?.id || "")
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
 
-  const defaultAddress = addresses.find(addr => addr.id === selectedAddress) || getDefaultAddress()
+  const selectedAddress = addresses.find(addr => getAddressId(addr) === selectedAddressId) || getDefaultAddress()
   const defaultPayment = paymentMethods.find(pm => pm.id === selectedPayment) || getDefaultPaymentMethod()
+
+  useEffect(() => {
+    const defaultId = getAddressId(getDefaultAddress())
+    const selectedStillExists = addresses.some(addr => getAddressId(addr) === selectedAddressId)
+
+    if (!selectedAddressId || !selectedStillExists) {
+      setSelectedAddressId(defaultId || "")
+    }
+  }, [addresses, selectedAddressId, getDefaultAddress])
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity * 83, 0)
   const deliveryFee = 2.99 * 83
@@ -54,7 +66,7 @@ export default function Checkout() {
           quantity: item.quantity,
           image: item.image
         })),
-        address: defaultAddress,
+        address: selectedAddress,
         paymentMethod: defaultPayment,
         subtotal,
         deliveryFee,
@@ -121,7 +133,8 @@ export default function Checkout() {
                   {addresses.length > 0 ? (
                     <div className="space-y-3">
                       {addresses.map((address) => {
-                        const isSelected = selectedAddress === address.id
+                        const addressId = getAddressId(address)
+                        const isSelected = selectedAddressId === addressId
                         const addressString = [
                           address.street,
                           address.additionalDetails,
@@ -130,12 +143,15 @@ export default function Checkout() {
 
                         return (
                           <div
-                            key={address.id}
+                            key={addressId || `${address.label}-${address.street}-${address.city}`}
                             className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${isSelected
                                 ? "border-[#EB590E] bg-orange-50"
                                 : "border-gray-200 hover:border-orange-300"
                               }`}
-                            onClick={() => setSelectedAddress(address.id)}
+                            onClick={() => {
+                              setSelectedAddressId(addressId)
+                              if (addressId) setDefaultAddress(addressId)
+                            }}
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
@@ -155,9 +171,7 @@ export default function Checkout() {
                   ) : (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground mb-4">No addresses saved</p>
-                      <Link to="/user/profile/addresses/new">
-                        <Button>Add Address</Button>
-                      </Link>
+                      <Button onClick={openLocationSelector}>Add Address</Button>
                     </div>
                   )}
                 </CardContent>

@@ -27,13 +27,18 @@ class FirebaseAuthService {
     if (this.initialized) return;
 
     try {
-      const dbCredentials = await getFirebaseCredentials();
-      let projectId =
-        dbCredentials.projectId || process.env.FIREBASE_PROJECT_ID;
-      let clientEmail =
-        dbCredentials.clientEmail || process.env.FIREBASE_CLIENT_EMAIL;
-      let privateKey =
-        dbCredentials.privateKey || process.env.FIREBASE_PRIVATE_KEY;
+      let dbCredentials = {};
+      try {
+        dbCredentials = (await getFirebaseCredentials()) || {};
+      } catch (error) {
+        logger.warn(
+          `Failed to load Firebase credentials from DB env service: ${error.message}`,
+        );
+      }
+
+      let projectId = dbCredentials.projectId || process.env.FIREBASE_PROJECT_ID;
+      let clientEmail = dbCredentials.clientEmail || process.env.FIREBASE_CLIENT_EMAIL;
+      let privateKey = dbCredentials.privateKey || process.env.FIREBASE_PRIVATE_KEY;
 
       // Fallback: read from firebaseconfig.json in backend root or config folder if env vars are not set
       if (!projectId || !clientEmail || !privateKey) {
@@ -116,9 +121,12 @@ class FirebaseAuthService {
    */
   async verifyIdToken(idToken) {
     if (!this.initialized) {
-      throw new Error(
-        "Firebase Admin is not configured. Please set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY in .env",
-      );
+      await this.init();
+      if (!this.initialized) {
+        throw new Error(
+          "Firebase Admin is not configured. Please set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY in .env",
+        );
+      }
     }
 
     if (!idToken) {

@@ -488,7 +488,7 @@ io.on('connection', (socket) => {
   };
 
   // Delivery boy sends location update
-  socket.on('update-location', (data) => {
+  socket.on('update-location', async (data) => {
     try {
       // Validate data
       if (!data.orderId || typeof data.lat !== 'number' || typeof data.lng !== 'number') {
@@ -506,10 +506,22 @@ io.on('connection', (socket) => {
         timestamp: Date.now()
       };
 
-      // Send to specific order room
-      io.to(`order:${data.orderId}`).emit(`location-receive-${data.orderId}`, locationData);
+      // Resolve all valid tracking IDs (custom orderId + mongo _id) and broadcast to all rooms/events
+      let trackingIds = [String(data.orderId)];
+      try {
+        const result = await getTrackedOrderAndIds(data.orderId);
+        if (result?.trackingIds?.length) {
+          trackingIds = result.trackingIds;
+        }
+      } catch (resolveError) {
+        console.warn('Could not resolve tracking IDs for update-location:', resolveError.message);
+      }
 
-      console.log(`📍 Location broadcasted to order room ${data.orderId}:`, {
+      trackingIds.forEach((trackingId) => {
+        io.to(`order:${trackingId}`).emit(`location-receive-${trackingId}`, locationData);
+      });
+
+      console.log(`📍 Location broadcasted to order rooms [${trackingIds.join(', ')}]:`, {
         lat: locationData.lat,
         lng: locationData.lng,
         heading: locationData.heading

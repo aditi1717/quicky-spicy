@@ -21,13 +21,15 @@ import {
   Settings as SettingsIcon,
   Power,
   ShoppingCart,
-  UtensilsCrossed
+  UtensilsCrossed,
+  MapPin
 } from "lucide-react"
 
 import AnimatedPage from "../../components/AnimatedPage"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useProfile } from "../../context/ProfileContext"
+import { useLocationSelector } from "../../components/UserLayout"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useCompanyName } from "@/lib/hooks/useCompanyName"
 import OptimizedImage from "@/components/OptimizedImage"
@@ -43,9 +45,20 @@ import { firebaseAuth } from "@/lib/firebase"
 import { clearModuleAuth } from "@/lib/utils/auth"
 
 export default function Profile() {
-  const { userProfile, vegMode, setVegMode } = useProfile()
+  const { userProfile, vegMode, setVegMode, getDefaultAddress, addresses } = useProfile()
+  const { openLocationSelector } = useLocationSelector()
   const navigate = useNavigate()
   const companyName = useCompanyName()
+  const defaultAddress = getDefaultAddress?.()
+  const savedAddressSummary = defaultAddress
+    ? [
+      defaultAddress.street,
+      defaultAddress.additionalDetails,
+      defaultAddress.city,
+      defaultAddress.state,
+      defaultAddress.zipCode
+    ].filter(Boolean).join(", ")
+    : "No address saved. Tap to save Home, Work, or Other."
 
   // Popup states
   const [vegModeOpen, setVegModeOpen] = useState(false)
@@ -388,6 +401,45 @@ export default function Profile() {
               </Card>
             </motion.div>
           </Link>
+
+          <motion.div
+            whileHover={{ x: 4, scale: 1.01 }}
+            transition={{ duration: 0.2, type: "spring", stiffness: 300 }}
+          >
+            <Card
+              className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer"
+              onClick={openLocationSelector}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  <motion.div
+                    className="bg-gray-100 dark:bg-gray-800 rounded-full p-2"
+                    whileHover={{ rotate: 15, scale: 1.1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <MapPin className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                  </motion.div>
+                  <div className="min-w-0">
+                    <p className="text-base font-medium text-gray-900 dark:text-white">Saved addresses</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {savedAddressSummary}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                    {addresses?.length || 0}
+                  </span>
+                  <motion.div
+                    whileHover={{ x: 4 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                  </motion.div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
 
           <Link to="/user/profile/edit" className="block">

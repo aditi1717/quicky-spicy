@@ -11,6 +11,7 @@ import { useProfile } from "../../context/ProfileContext"
 import { useOrders } from "../../context/OrdersContext"
 import { useLocation as useUserLocation } from "../../hooks/useLocation"
 import { useZone } from "../../hooks/useZone"
+import { useLocationSelector } from "../../components/UserLayout"
 import { orderAPI, restaurantAPI, adminAPI, userAPI, API_ENDPOINTS } from "@/lib/api"
 import { API_BASE_URL } from "@/lib/api/config"
 import { initRazorpayPayment } from "@/lib/utils/razorpay"
@@ -83,10 +84,10 @@ export default function Cart() {
   }
 
   const { cart, updateQuantity, addToCart, getCartCount, clearCart, cleanCartForRestaurant } = cartContext;
-  const { getDefaultAddress, getDefaultPaymentMethod, addresses, paymentMethods, userProfile } = useProfile()
+  const { getDefaultAddress, getDefaultPaymentMethod, setDefaultAddress, addresses, paymentMethods, userProfile } = useProfile()
   const { createOrder } = useOrders()
+  const { openLocationSelector } = useLocationSelector()
   const { location: currentLocation } = useUserLocation() // Get live location address
-  const { zoneId } = useZone(currentLocation) // Get user's zone
 
   const [showCoupons, setShowCoupons] = useState(false)
   const [appliedCoupon, setAppliedCoupon] = useState(null)
@@ -125,6 +126,7 @@ export default function Cart() {
   const [orderProgress, setOrderProgress] = useState(0)
   const [showOrderSuccess, setShowOrderSuccess] = useState(false)
   const [placedOrderId, setPlacedOrderId] = useState(null)
+  const [selectedAddressId, setSelectedAddressId] = useState(null)
 
   // Restaurant and pricing state
   const [restaurantData, setRestaurantData] = useState(null)
@@ -151,24 +153,42 @@ export default function Cart() {
 
 
   const cartCount = getCartCount()
+  const getAddressId = (address) => address?.id || address?._id || null
+  const normalizeAddressLabel = (label) => {
+    if (!label) return ""
+    const value = String(label).trim().toLowerCase()
+    if (value === "work" || value === "office") return "office"
+    if (value === "home") return "home"
+    if (value === "other") return "other"
+    return value
+  }
+  const getDisplayAddressLabel = (label) => {
+    const normalized = normalizeAddressLabel(label)
+    if (normalized === "office") return "Work"
+    if (normalized === "home") return "Home"
+    if (normalized === "other") return "Other"
+    return label || "Saved address"
+  }
   const savedAddress = getDefaultAddress()
-  // Priority: Use live location if available, otherwise use saved address
-  const defaultAddress = currentLocation?.formattedAddress && currentLocation.formattedAddress !== "Select location"
+  const selectedAddress = addresses.find((addr) => getAddressId(addr) && getAddressId(addr) === selectedAddressId)
+  const defaultAddress = selectedAddress || savedAddress || null
+  const hasSavedAddress = Boolean(defaultAddress && formatFullAddress(defaultAddress))
+  const selectedAddressCoordinates = defaultAddress?.location?.coordinates
+  const zoneLocation = selectedAddressCoordinates?.length === 2
     ? {
-      ...savedAddress,
-      formattedAddress: currentLocation.formattedAddress,
-      address: currentLocation.address || currentLocation.formattedAddress,
-      street: currentLocation.street || currentLocation.address,
-      city: currentLocation.city,
-      state: currentLocation.state,
-      zipCode: currentLocation.postalCode,
-      area: currentLocation.area,
-      location: currentLocation.latitude && currentLocation.longitude ? {
-        coordinates: [currentLocation.longitude, currentLocation.latitude]
-      } : savedAddress?.location
+      latitude: selectedAddressCoordinates[1],
+      longitude: selectedAddressCoordinates[0]
     }
-    : savedAddress
+    : currentLocation
+  const { zoneId } = useZone(zoneLocation) // Prefer selected/saved address zone
   const defaultPayment = getDefaultPaymentMethod()
+
+  useEffect(() => {
+    const defaultId = getAddressId(savedAddress)
+    if (!selectedAddressId && defaultId) {
+      setSelectedAddressId(defaultId)
+    }
+  }, [savedAddress, selectedAddressId])
 
   // Get restaurant ID from cart or restaurant data
   // Priority: restaurantData > cart[0].restaurantId
@@ -539,7 +559,7 @@ export default function Cart() {
   // Calculate pricing from backend whenever cart, address, or coupon changes
   useEffect(() => {
     const calculatePricing = async () => {
-      if (cart.length === 0 || !defaultAddress) {
+      if (cart.length === 0 || !hasSavedAddress) {
         setPricing(null)
         return
       }
@@ -689,11 +709,27 @@ export default function Cart() {
   const handleSelectAddressByLabel = async (label) => {
     try {
       // Find address with matching label
-      const address = addresses.find(addr => addr.label === label)
+      const targetLabel = normalizeAddressLabel(label)
+      const address = addresses.find(addr => normalizeAddressLabel(addr.label) === targetLabel)
 
       if (!address) {
         toast.error(`No ${label} address found. Please add an address first.`)
         return
+      }
+
+      await handleSelectSavedAddress(address)
+    } catch (error) {
+      console.error(`Error selecting ${label} address:`, error)
+      toast.error(`Failed to select ${label} address. Please try again.`)
+    }
+  }
+
+  const handleSelectSavedAddress = async (address) => {
+    try {
+      const addressId = getAddressId(address)
+      if (addressId) {
+        setSelectedAddressId(addressId)
+        setDefaultAddress(addressId)
       }
 
       // Get coordinates from address location
@@ -734,13 +770,10 @@ export default function Cart() {
       }
       localStorage.setItem("userLocation", JSON.stringify(locationData))
 
-      toast.success(`${label} address selected!`)
-
-      // Force page reload to update location
-      window.location.reload()
+      toast.success(`${address.label || "Saved"} address selected!`)
     } catch (error) {
-      console.error(`Error selecting ${label} address:`, error)
-      toast.error(`Failed to select ${label} address. Please try again.`)
+      console.error("Error selecting saved address:", error)
+      toast.error("Failed to select address. Please try again.")
     }
   }
 
@@ -751,7 +784,7 @@ export default function Cart() {
       setShowCoupons(false)
 
       // Recalculate pricing with new coupon
-      if (cart.length > 0 && defaultAddress) {
+      if (cart.length > 0 && hasSavedAddress) {
         try {
           const items = cart.map(item => ({
             itemId: item.id,
@@ -787,7 +820,7 @@ export default function Cart() {
     setCouponCode("")
 
     // Recalculate pricing without coupon
-    if (cart.length > 0 && defaultAddress) {
+    if (cart.length > 0 && hasSavedAddress) {
       try {
         const items = cart.map(item => ({
           itemId: item.id,
@@ -818,8 +851,9 @@ export default function Cart() {
 
 
   const handlePlaceOrder = async () => {
-    if (!defaultAddress) {
-      alert("Please add a delivery address")
+    if (!hasSavedAddress) {
+      toast.error("Please save a delivery address to continue")
+      openLocationSelector()
       return
     }
 
@@ -1642,7 +1676,11 @@ export default function Cart() {
 
               {/* Delivery Address */}
               <div className="bg-white dark:bg-[#1a1a1a] px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl">
-                <Link className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={openLocationSelector}
+                  className="flex items-center justify-between w-full text-left"
+                >
                   <div className="flex items-center gap-3 md:gap-4">
                     <MapPin className="h-4 w-4 md:h-5 md:w-5 text-gray-500 dark:text-gray-400" />
                     <div className="flex-1">
@@ -1652,10 +1690,16 @@ export default function Cart() {
                       <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
                         {defaultAddress ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || "Add delivery address") : "Add delivery address"}
                       </p>
+                      {!hasSavedAddress && (
+                        <p className="text-xs md:text-sm text-[#EB590E] mt-1">
+                          Use current location and save address to place order
+                        </p>
+                      )}
                       {/* Address Selection Buttons */}
                       <div className="flex gap-2 mt-2">
-                        {["Home", "Office", "Other"].map((label) => {
-                          const addressExists = addresses.some(addr => addr.label === label)
+                        {["Home", "Work", "Other"].map((label) => {
+                          const normalizedLabel = normalizeAddressLabel(label)
+                          const addressExists = addresses.some(addr => normalizeAddressLabel(addr.label) === normalizedLabel)
                           return (
                             <button
                               key={label}
@@ -1675,10 +1719,49 @@ export default function Cart() {
                           )
                         })}
                       </div>
+                      {addresses.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          {addresses.map((address) => {
+                            const addressId = getAddressId(address)
+                            const isSelected = addressId && addressId === selectedAddressId
+                            return (
+                              <button
+                                key={addressId || `${address.label}-${address.street}-${address.city}`}
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  handleSelectSavedAddress(address)
+                                }}
+                                className={`w-full text-left rounded-lg border px-3 py-2 transition-colors ${isSelected
+                                  ? "border-[#EB590E] bg-[#FFF2EB] dark:bg-[#EB590E]/10"
+                                  : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                  }`}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <p className="text-xs md:text-sm font-medium text-gray-800 dark:text-gray-200">
+                                      {getDisplayAddressLabel(address.label)}
+                                    </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                                      {formatFullAddress(address) || address.address || "Address details"}
+                                    </p>
+                                  </div>
+                                  {isSelected && (
+                                    <span className="text-[10px] md:text-xs text-[#EB590E] font-medium whitespace-nowrap">
+                                      Selected
+                                    </span>
+                                  )}
+                                </div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <ChevronRight className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
-                </Link>
+                </button>
               </div>
 
               {/* Contact */}
@@ -1848,6 +1931,8 @@ export default function Cart() {
                 <span className="font-bold text-base md:text-lg">
                   {isPlacingOrder
                     ? "Processing..."
+                    : !hasSavedAddress
+                      ? "Add Address to Continue"
                     : selectedPaymentMethod === "razorpay"
                       ? "Select Payment"
                       : selectedPaymentMethod === "wallet"
