@@ -1,6 +1,7 @@
 import Restaurant from '../models/Restaurant.js';
 import Menu from '../models/Menu.js';
 import Zone from '../../admin/models/Zone.js';
+import FeeSettings from '../../admin/models/FeeSettings.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../../../shared/utils/cloudinaryService.js';
 import { initializeCloudinary } from '../../../config/cloudinary.js';
@@ -197,6 +198,14 @@ export const getRestaurants = async (req, res) => {
       }
     }
     
+    // Resolve delivery fee metadata for customer cards
+    const feeSettings = await FeeSettings.findOne({ isActive: true })
+      .select('deliveryFee deliveryFeeRanges')
+      .lean();
+    const hasConfiguredDeliveryFee = feeSettings?.deliveryFee !== undefined && feeSettings?.deliveryFee !== null;
+    const hasDeliveryFeeRanges = Array.isArray(feeSettings?.deliveryFeeRanges) && feeSettings.deliveryFeeRanges.length > 0;
+    const defaultDeliveryFee = hasConfiguredDeliveryFee ? Number(feeSettings.deliveryFee) : null;
+
     // Fetch restaurants - Show ALL restaurants regardless of zone
     let restaurants = await Restaurant.find(query)
       .select('-owner -createdAt -updatedAt -password')
@@ -226,6 +235,24 @@ export const getRestaurants = async (req, res) => {
         return distMatch && parseFloat(distMatch[1]) <= maxDist;
       });
     }
+
+    // Add explicit delivery metadata so frontend doesn't guess
+    restaurants = restaurants.map((restaurant) => {
+      const hasRestaurantFee = restaurant.deliveryFee !== undefined && restaurant.deliveryFee !== null;
+      const resolvedDeliveryFee = hasRestaurantFee
+        ? Number(restaurant.deliveryFee)
+        : defaultDeliveryFee;
+      const noDeliveryFeeConfigured = resolvedDeliveryFee === null || Number.isNaN(resolvedDeliveryFee);
+      const isFreeDelivery = hasDeliveryFeeRanges
+        ? false
+        : (restaurant.freeDelivery === true || resolvedDeliveryFee === 0 || noDeliveryFeeConfigured);
+
+      return {
+        ...restaurant,
+        deliveryFee: noDeliveryFeeConfigured ? null : resolvedDeliveryFee,
+        freeDelivery: isFreeDelivery
+      };
+    });
     
     // Get total count (before filtering by string fields)
     const totalQuery = { ...query };
@@ -851,6 +878,14 @@ export const getRestaurantsWithDishesUnder250 = async (req, res) => {
       });
     };
 
+    // Resolve delivery fee metadata for customer cards
+    const feeSettings = await FeeSettings.findOne({ isActive: true })
+      .select('deliveryFee deliveryFeeRanges')
+      .lean();
+    const hasConfiguredDeliveryFee = feeSettings?.deliveryFee !== undefined && feeSettings?.deliveryFee !== null;
+    const hasDeliveryFeeRanges = Array.isArray(feeSettings?.deliveryFeeRanges) && feeSettings.deliveryFeeRanges.length > 0;
+    const defaultDeliveryFee = hasConfiguredDeliveryFee ? Number(feeSettings.deliveryFee) : null;
+
     // Helper function to process a single restaurant
     const processRestaurant = async (restaurant) => {
       try {
@@ -890,6 +925,15 @@ export const getRestaurantsWithDishesUnder250 = async (req, res) => {
 
         // Only include restaurant if it has at least one dish under ₹250
         if (dishesUnder250.length > 0) {
+          const hasRestaurantFee = restaurant.deliveryFee !== undefined && restaurant.deliveryFee !== null;
+          const resolvedDeliveryFee = hasRestaurantFee
+            ? Number(restaurant.deliveryFee)
+            : defaultDeliveryFee;
+          const noDeliveryFeeConfigured = resolvedDeliveryFee === null || Number.isNaN(resolvedDeliveryFee);
+          const isFreeDelivery = hasDeliveryFeeRanges
+            ? false
+            : (restaurant.freeDelivery === true || resolvedDeliveryFee === 0 || noDeliveryFeeConfigured);
+
           return {
             id: restaurant._id.toString(),
             restaurantId: restaurant.restaurantId,
@@ -898,6 +942,8 @@ export const getRestaurantsWithDishesUnder250 = async (req, res) => {
             rating: restaurant.rating || 0,
             totalRatings: restaurant.totalRatings || 0,
             deliveryTime: restaurant.estimatedDeliveryTime || "25-30 mins",
+            deliveryFee: noDeliveryFeeConfigured ? null : resolvedDeliveryFee,
+            freeDelivery: isFreeDelivery,
             distance: restaurant.distance || "1.2 km",
             cuisine: restaurant.cuisines && restaurant.cuisines.length > 0 
               ? restaurant.cuisines.join(' • ') 

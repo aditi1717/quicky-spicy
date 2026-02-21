@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, Plus, Edit2, ChevronRight, FileText, CheckCircle, XCircle, Eye, X } from "lucide-react"
+import { ArrowLeft, Plus, Edit2, ChevronRight, FileText, CheckCircle, XCircle, Eye, X, Loader2, User } from "lucide-react"
 import BottomPopup from "../components/BottomPopup"
 import { toast } from "sonner"
 import { deliveryAPI } from "@/lib/api"
@@ -15,6 +15,7 @@ export default function ProfileDetails() {
   const [selectedDocument, setSelectedDocument] = useState(null)
   const [showDocumentModal, setShowDocumentModal] = useState(false)
   const [showBankDetailsPopup, setShowBankDetailsPopup] = useState(false)
+  const [walletBalance, setWalletBalance] = useState(null)
   const [bankDetails, setBankDetails] = useState({
     accountHolderName: "",
     accountNumber: "",
@@ -28,12 +29,46 @@ export default function ProfileDetails() {
 
   // Fetch profile data
   useEffect(() => {
+    const parseWalletBalance = (response) => {
+      const data = response?.data
+      const wallet =
+        (data?.success && data?.data?.wallet) ||
+        data?.wallet ||
+        data?.data ||
+        data
+
+      const possibleBalance =
+        wallet?.totalBalance ??
+        wallet?.balance ??
+        wallet?.pocketBalance ??
+        0
+
+      return Number(possibleBalance) || 0
+    }
+
+    const fetchWalletBalance = async () => {
+      try {
+        const walletResponse = await deliveryAPI.getWallet()
+        setWalletBalance(parseWalletBalance(walletResponse))
+      } catch (error) {
+        console.error("Error fetching wallet balance:", error)
+      }
+    }
+
     const fetchProfile = async () => {
       try {
         setLoading(true)
-        const response = await deliveryAPI.getProfile()
-        if (response?.data?.success && response?.data?.data?.profile) {
-          const profileData = response.data.data.profile
+        const [profileResponse] = await Promise.allSettled([
+          deliveryAPI.getProfile(),
+          fetchWalletBalance()
+        ])
+
+        if (
+          profileResponse?.status === "fulfilled" &&
+          profileResponse?.value?.data?.success &&
+          profileResponse?.value?.data?.data?.profile
+        ) {
+          const profileData = profileResponse.value.data.data.profile
           setProfile(profileData)
           setVehicleNumber(profileData?.vehicle?.number || "")
           setVehicleInput(profileData?.vehicle?.number || "")
@@ -44,6 +79,8 @@ export default function ProfileDetails() {
             ifscCode: profileData?.documents?.bankDetails?.ifscCode || "",
             bankName: profileData?.documents?.bankDetails?.bankName || ""
           })
+        } else {
+          throw new Error("Profile fetch failed")
         }
       } catch (error) {
         console.error("Error fetching profile:", error)
@@ -68,6 +105,60 @@ export default function ProfileDetails() {
     fetchProfile()
   }, [navigate])
 
+  useEffect(() => {
+    const refreshWalletBalance = async () => {
+      try {
+        const walletResponse = await deliveryAPI.getWallet()
+        const data = walletResponse?.data
+        const wallet =
+          (data?.success && data?.data?.wallet) ||
+          data?.wallet ||
+          data?.data ||
+          data
+        const balance = Number(
+          wallet?.totalBalance ?? wallet?.balance ?? wallet?.pocketBalance ?? 0
+        ) || 0
+        setWalletBalance(balance)
+      } catch (error) {
+        console.error("Error refreshing wallet balance:", error)
+      }
+    }
+
+    window.addEventListener("deliveryWalletStateUpdated", refreshWalletBalance)
+    return () => {
+      window.removeEventListener("deliveryWalletStateUpdated", refreshWalletBalance)
+    }
+  }, [])
+
+  const isAdminApproved = ["approved", "active"].includes(
+    String(profile?.status || "").toLowerCase()
+  )
+
+  const getDocumentVerificationLabel = (doc) => {
+    if (!doc?.document) return "Not uploaded"
+    if (doc?.verified || isAdminApproved) return "Verified"
+    return "Not verified"
+  }
+
+  const ratingValue = Number(profile?.metrics?.rating)
+  const ratingCount = Number(profile?.metrics?.ratingCount || 0)
+  const ratingDisplay = Number.isFinite(ratingValue)
+    ? `${ratingValue.toFixed(1)} (${ratingCount})`
+    : "-"
+
+  const profileImageUrl = profile?.profileImage?.url || profile?.documents?.photo || null
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-gray-700">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="text-sm font-medium">Loading profile...</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -83,11 +174,19 @@ export default function ProfileDetails() {
 
       {/* Profile Picture Area */}
       <div className="relative w-full bg-gray-200 overflow-hidden flex items-center justify-center">
-        <img
-          src={profile?.profileImage?.url || profile?.documents?.photo || "https://i.pravatar.cc/400?img=12"}
-          alt="Profile"
-          className="w-full h-auto max-h-96 object-contain"
-        />
+        {profileImageUrl ? (
+          <img
+            src={profileImageUrl}
+            alt="Profile"
+            className="w-full h-auto max-h-96 object-contain"
+          />
+        ) : (
+          <div className="w-full h-64 flex items-center justify-center bg-gray-200">
+            <div className="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center">
+              <User className="w-10 h-10 text-gray-500" />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -98,7 +197,7 @@ export default function ProfileDetails() {
           <div className="bg-white rounded-lg shadow-sm divide-y divide-gray-200">
             <div className="p-2 px-3 flex items-center justify-between">
               <p className="text-base text-gray-900">
-                {loading ? "Loading..." : `${profile?.name || "N/A"} (${profile?.deliveryId || "N/A"})`}
+                {`${profile?.name || "-"} (${profile?.deliveryId || "-"})`}
               </p>
             </div>
             <div className="divide-y divide-gray-200">
@@ -161,7 +260,7 @@ export default function ProfileDetails() {
               <div className="flex-1">
                 <p className="text-base font-medium text-gray-900">Aadhar Card</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {profile?.documents?.aadhar?.verified ? "Verified" : profile?.documents?.aadhar?.document ? "Not verified" : "Not uploaded"}
+                  {getDocumentVerificationLabel(profile?.documents?.aadhar)}
                 </p>
               </div>
               {profile?.documents?.aadhar?.document && (
@@ -185,7 +284,7 @@ export default function ProfileDetails() {
               <div className="flex-1">
                 <p className="text-base font-medium text-gray-900">PAN Card</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {profile?.documents?.pan?.verified ? "Verified" : profile?.documents?.pan?.document ? "Not verified" : "Not uploaded"}
+                  {getDocumentVerificationLabel(profile?.documents?.pan)}
                 </p>
               </div>
               {profile?.documents?.pan?.document && (
@@ -209,7 +308,7 @@ export default function ProfileDetails() {
               <div className="flex-1">
                 <p className="text-base font-medium text-gray-900">Driving License</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {profile?.documents?.drivingLicense?.verified ? "Verified" : profile?.documents?.drivingLicense?.document ? "Not verified" : "Not uploaded"}
+                  {getDocumentVerificationLabel(profile?.documents?.drivingLicense)}
                 </p>
               </div>
               {profile?.documents?.drivingLicense?.document && (
@@ -260,7 +359,7 @@ export default function ProfileDetails() {
               <div className="w-full align-center flex content-center justify-between">
                 <p className="text-sm text-gray-900 mb-1">Rating</p>
                 <p className="text-base text-gray-900">
-                  {profile?.metrics?.rating ? `${profile.metrics.rating.toFixed(1)} (${profile.metrics.ratingCount || 0})` : "-"}
+                  {ratingDisplay}
                 </p>
               </div>
             </div>
@@ -268,7 +367,7 @@ export default function ProfileDetails() {
               <div className="w-full align-center flex content-center justify-between">
                 <p className="text-sm text-gray-900 mb-1">Wallet Balance</p>
                 <p className="text-base text-gray-900">
-                  ₹{profile?.wallet?.balance?.toFixed(2) || "0.00"}
+                  ₹{(walletBalance ?? profile?.wallet?.balance ?? 0).toFixed(2)}
                 </p>
               </div>
             </div>
@@ -611,4 +710,3 @@ export default function ProfileDetails() {
     </div>
   )
 }
-

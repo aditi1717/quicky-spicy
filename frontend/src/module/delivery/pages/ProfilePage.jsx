@@ -19,7 +19,8 @@ import {
   IndianRupee,
   Sparkles,
   LogOut,
-  X
+  X,
+  Loader2
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { deliveryAPI } from "@/lib/api"
@@ -208,6 +209,17 @@ export default function ProfilePage() {
     }, 100)
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-gray-700">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="text-sm font-medium">Loading profile...</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 font-poppins overflow-x-hidden">
       {/* Main Content */}
@@ -224,12 +236,12 @@ export default function ProfilePage() {
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <h2 className="text-2xl md:text-3xl font-bold">
-                  {loading ? "Loading..." : profile?.name || "Delivery Partner"}
+                  {profile?.name || ""}
                 </h2>
                 <ChevronRight className="w-5 h-5" />
               </div>
               <p className="text-gray-600 text-sm md:text-base mb-3">
-                {profile?.deliveryId || "N/A"}
+                {profile?.deliveryId || ""}
               </p>
             </div>
             <div className="relative shrink-0 ml-4">
@@ -466,4 +478,3 @@ export default function ProfilePage() {
     </div>
   )
 }
-

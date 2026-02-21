@@ -788,6 +788,7 @@ export default function Home() {
 
           // Keep single image for backward compatibility
           const image = allImages[0]
+          const offerText = restaurant.offer || null
 
           return {
             id: restaurant.restaurantId || restaurant._id,
@@ -804,7 +805,7 @@ export default function Home() {
               ? `${restaurant.cuisines[0]} Special`
               : "Special Dish"),
             featuredPrice: restaurant.featuredPrice || 249, // Use from API or default
-            offer: restaurant.offer || "Flat ₹50 OFF above ₹199", // Use from API or default
+            offer: offerText,
             slug: restaurant.slug,
             restaurantId: restaurant.restaurantId,
             location: restaurant.location, // Store location for distance recalculation
@@ -1804,14 +1805,6 @@ export default function Home() {
                               </Button>
                             </div>
 
-                            {/* FREE delivery Badge - Bottom Left (only for first 3 restaurants) */}
-                            {index < 3 && (
-                              <div className="absolute bottom-2 left-0 sm:bottom-2 sm:left-0 z-10 transform transition-all duration-300 group-hover:translate-x-1">
-                                <div className="bg-gradient-to-r from-[#EB590E] via-[#D94F0C]/80 to-transparent text-white px-2.5 py-1 rounded-r-sm text-[10px] sm:text-xs font-bold shadow-lg backdrop-blur-sm">
-                                  FREE delivery
-                                </div>
-                              </div>
-                            )}
                           </div>
 
                           {/* Content Section */}
