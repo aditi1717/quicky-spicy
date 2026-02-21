@@ -75,6 +75,7 @@ export const authAPI = {
     email = null,
     role = "user",
     password = null,
+    referralCode = null,
   ) => {
     const payload = {
       otp,
@@ -85,17 +86,28 @@ export const authAPI = {
     if (email != null) payload.email = email;
     if (name != null) payload.name = name;
     if (password != null) payload.password = password; // don't send null, Joi expects string
+    if (referralCode != null && String(referralCode).trim()) {
+      payload.referralCode = String(referralCode).trim().toUpperCase();
+    }
     return apiClient.post(API_ENDPOINTS.AUTH.VERIFY_OTP, payload);
   },
 
   // Register with email/password
-  register: (name, email, password, phone = null, role = "user") => {
+  register: (
+    name,
+    email,
+    password,
+    phone = null,
+    role = "user",
+    referralCode = null,
+  ) => {
     return apiClient.post(API_ENDPOINTS.AUTH.REGISTER, {
       name,
       email,
       password,
       phone,
       role,
+      ...(referralCode ? { referralCode: String(referralCode).trim().toUpperCase() } : {}),
     });
   },
 

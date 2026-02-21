@@ -51,6 +51,7 @@ export default function SignIn() {
     countryCode: "+91",
     email: "",
     name: "",
+    referralCode: "",
   })
   const [errors, setErrors] = useState({
     phone: "",
@@ -442,7 +443,8 @@ export default function SignIn() {
             ...prev,
             phone: phoneDigits,
             name: data.name || prev.name,
-            email: data.email || prev.email
+            email: data.email || prev.email,
+            referralCode: data.referralCode || prev.referralCode,
           }))
           if (data.method) setAuthMethod(data.method)
         }
@@ -451,6 +453,16 @@ export default function SignIn() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    const refCode = searchParams.get("ref")
+    if (refCode) {
+      setFormData((prev) => ({
+        ...prev,
+        referralCode: String(refCode).trim().toUpperCase(),
+      }))
+    }
+  }, [searchParams])
 
   // Get selected country details dynamically
   const selectedCountry = countryCodes.find(c => c.code === formData.countryCode) || countryCodes[2] // Default to India (+91)
@@ -572,6 +584,9 @@ export default function SignIn() {
         phone: fullPhone,
         email: email,
         name: isSignUp ? formData.name.trim() : null,
+        referralCode: isSignUp
+          ? String(formData.referralCode || "").trim().toUpperCase()
+          : null,
         isSignUp,
         module: "user",
       }
@@ -658,7 +673,7 @@ export default function SignIn() {
     const newMode = isSignUp ? "signin" : "signup"
     navigate(`/user/auth/sign-in?mode=${newMode}`, { replace: true })
     // Reset form
-    setFormData({ phone: "", countryCode: "+91", email: "", name: "" })
+    setFormData({ phone: "", countryCode: "+91", email: "", name: "", referralCode: "" })
     setErrors({ phone: "", email: "", name: "" })
   }
 
@@ -723,6 +738,19 @@ export default function SignIn() {
                     <span>{errors.name}</span>
                   </div>
                 )}
+                <Input
+                  id="referralCode"
+                  name="referralCode"
+                  placeholder="Referral code (optional)"
+                  value={formData.referralCode}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      referralCode: e.target.value.toUpperCase(),
+                    }))
+                  }
+                  className="text-base md:text-lg h-12 md:h-14 bg-white dark:bg-[#1a1a1a] text-black dark:text-white border-gray-300 dark:border-gray-700 transition-colors"
+                />
               </div>
             )}
 

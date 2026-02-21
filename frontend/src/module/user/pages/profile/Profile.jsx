@@ -22,7 +22,9 @@ import {
   Power,
   ShoppingCart,
   UtensilsCrossed,
-  MapPin
+  MapPin,
+  Copy,
+  Share2
 } from "lucide-react"
 
 import AnimatedPage from "../../components/AnimatedPage"
@@ -64,6 +66,7 @@ export default function Profile() {
   const [vegModeOpen, setVegModeOpen] = useState(false)
   const [appearanceOpen, setAppearanceOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [referralCopied, setReferralCopied] = useState(false)
 
   // Settings states
   const [appearance, setAppearance] = useState(() => {
@@ -191,6 +194,41 @@ export default function Profile() {
 
   const profileCompletion = calculateProfileCompletion()
   const isComplete = profileCompletion === 100
+  const referralCode = userProfile?.referralCode || ""
+  const referralLink = referralCode
+    ? `${window.location.origin}/user/auth/sign-in?mode=signup&ref=${encodeURIComponent(referralCode)}`
+    : ""
+
+  const handleCopyReferral = async () => {
+    if (!referralCode) return
+    try {
+      await navigator.clipboard.writeText(referralCode)
+      setReferralCopied(true)
+      setTimeout(() => setReferralCopied(false), 1500)
+    } catch (error) {
+      console.error("Failed to copy referral code:", error)
+    }
+  }
+
+  const handleShareReferral = async () => {
+    if (!referralCode) return
+    const shareText = `Use my referral code ${referralCode} on signup and I get ₹50 in wallet.`
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${companyName} referral`,
+          text: shareText,
+          url: referralLink,
+        })
+      } else {
+        await navigator.clipboard.writeText(`${shareText} ${referralLink}`)
+        setReferralCopied(true)
+        setTimeout(() => setReferralCopied(false), 1500)
+      }
+    } catch (error) {
+      console.error("Failed to share referral:", error)
+    }
+  }
 
   // Handle logout
   const handleLogout = async () => {
@@ -401,6 +439,59 @@ export default function Profile() {
               </Card>
             </motion.div>
           </Link>
+
+          <motion.div
+            whileHover={{ x: 4, scale: 1.01 }}
+            transition={{ duration: 0.2, type: "spring", stiffness: 300 }}
+          >
+            <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <motion.div
+                      className="bg-gray-100 dark:bg-gray-800 rounded-full p-2"
+                      whileHover={{ rotate: 15, scale: 1.1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Tag className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                    </motion.div>
+                    <span className="text-base font-medium text-gray-900 dark:text-white">Referral</span>
+                  </div>
+                  <span className="text-xs font-semibold px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300">
+                    Earn ₹50
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2 bg-gray-50 dark:bg-gray-900 rounded-lg px-3 py-2 mb-2">
+                  <span className="text-sm font-semibold tracking-wider text-gray-900 dark:text-white">
+                    {referralCode || "Loading..."}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyReferral}
+                    className="inline-flex items-center gap-1 text-xs text-[#EB590E] font-medium"
+                    disabled={!referralCode}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    {referralCopied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    When someone signs up using your code, you get ₹50 in wallet.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleShareReferral}
+                    className="inline-flex items-center gap-1 text-xs text-[#EB590E] font-medium ml-2"
+                    disabled={!referralCode}
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
+                    Share
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
           <motion.div
             whileHover={{ x: 4, scale: 1.01 }}
