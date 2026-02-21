@@ -28,7 +28,17 @@ import { toast } from "sonner"
 export default function HubMenu() {
   const navigate = useNavigate()
   const [loadingMenu, setLoadingMenu] = useState(true)
-  const [activeTab, setActiveTab] = useState("all")
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const saved = localStorage.getItem("restaurant_hub_menu_active_tab")
+      if (saved === "all" || saved === "add-ons") {
+        return saved
+      }
+    } catch (error) {
+      console.warn("Failed to load hub menu active tab:", error)
+    }
+    return "all"
+  })
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isAddPopupOpen, setIsAddPopupOpen] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -364,9 +374,19 @@ export default function HubMenu() {
       if (showLoading) setLoadingAddons(true)
       const response = await restaurantAPI.getAddons()
       const data = response?.data?.data?.addons || response?.data?.addons || []
-      // Filter to show only approved add-ons
-      const approvedAddons = data.filter(addon => addon.approvalStatus === 'approved')
-      setAddons(approvedAddons)
+      const getAddonCreatedMs = (addon = {}) => {
+        const candidates = [addon.requestedAt, addon.createdAt, addon.updatedAt]
+          .map((v) => new Date(v).getTime())
+          .find((ms) => Number.isFinite(ms) && ms > 0)
+        if (candidates) return candidates
+        const rawId = String(addon.id || "")
+        const match = rawId.match(/\d{10,}/)
+        if (!match) return 0
+        const fromId = Number(match[0])
+        return Number.isFinite(fromId) ? fromId : 0
+      }
+      const sortedAddons = [...data].sort((a, b) => getAddonCreatedMs(b) - getAddonCreatedMs(a))
+      setAddons(sortedAddons)
     } catch (error) {
       console.error('Error fetching add-ons:', error)
       toast.error('Failed to load add-ons')
@@ -379,6 +399,14 @@ export default function HubMenu() {
   useEffect(() => {
     if (activeTab === "add-ons") {
       fetchAddons(true)
+    }
+  }, [activeTab])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("restaurant_hub_menu_active_tab", activeTab)
+    } catch (error) {
+      console.warn("Failed to persist hub menu active tab:", error)
     }
   }, [activeTab])
 
@@ -536,6 +564,10 @@ export default function HubMenu() {
 
   // Handle edit add-on
   const handleEditAddon = (addon) => {
+    if (!isPendingApproval(addon?.approvalStatus)) {
+      toast.error("Approved or rejected add-ons cannot be edited")
+      return
+    }
     setEditingAddon(addon)
     setAddonName(addon.name || "")
     setAddonDescription(addon.description || "")
@@ -610,6 +642,25 @@ export default function HubMenu() {
       isCategoryOptionsOpen, isEditCategoryOpen, isAddSubCategoryOpen, isAddCategoryPopupOpen, isSearchOpen, isAddAddonModalOpen])
 
   // Filter menu based on active filter and search query
+  const getItemCreatedMs = (item = {}) => {
+    const direct = [item.requestedAt, item.createdAt, item.addedAt, item.updatedAt]
+      .map((value) => new Date(value).getTime())
+      .find((ms) => Number.isFinite(ms) && ms > 0)
+    if (direct) return direct
+
+    const rawId = String(item.id || "")
+    const match = rawId.match(/\d{10,}/)
+    if (!match) return 0
+    const fromId = Number(match[0])
+    return Number.isFinite(fromId) ? fromId : 0
+  }
+
+  const isPendingApproval = (status) =>
+    String(status || 'pending').toLowerCase() === 'pending'
+
+  const isRejectedApproval = (status) =>
+    String(status || '').toLowerCase() === 'rejected'
+
   const filteredMenuGroups = useMemo(() => {
     let filtered = menuData
 
@@ -649,7 +700,21 @@ export default function HubMenu() {
       }).filter(group => group.items.length > 0)
     }
 
-    return filtered
+    // Always show newest items first
+    return filtered.map((group) => ({
+      ...group,
+      items: [...(group.items || [])].sort(
+        (a, b) => getItemCreatedMs(b) - getItemCreatedMs(a)
+      ),
+      subsections: Array.isArray(group.subsections)
+        ? group.subsections.map((subsection) => ({
+            ...subsection,
+            items: [...(subsection.items || [])].sort(
+              (a, b) => getItemCreatedMs(b) - getItemCreatedMs(a)
+            ),
+          }))
+        : [],
+    }))
   }, [menuData, activeFilter, searchQuery])
 
   // Toggle group expansion
@@ -997,7 +1062,7 @@ export default function HubMenu() {
           </AnimatePresence>
 
           {/* Horizontally scrollable filters */}
-          <div className="flex pl-4 relative items-center gap-2 overflow-x-auto pb-2" ref={scrollContainerRef} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className="flex px-4 relative items-center gap-2 overflow-x-auto pb-2 scrollbar-hide" ref={scrollContainerRef} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             <style>{`
               .scrollbar-hide::-webkit-scrollbar {
                 display: none;
@@ -1034,7 +1099,7 @@ export default function HubMenu() {
             ))}
             <button
               onClick={() => setIsFilterOpen(true)}
-              className="sticky right-0 z-10 bg-black p-2 text-white border-2 border-black flex items-center gap-2 px-2 py-1 text-semibold rounded-l-lg text-sm font-medium whitespace-nowrap"
+              className="z-10 shrink-0 bg-black text-white border-2 border-black flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap"
             >
               <SlidersHorizontal className="w-4 h-4" />
               <span>Filter</span>
@@ -1119,7 +1184,7 @@ export default function HubMenu() {
                           <p className="text-sm text-gray-600 mb-2">{addon.description}</p>
                         )}
                         <p className="text-base font-bold text-gray-900">₹{addon.price}</p>
-                        {addon.rejectionReason && (
+                        {isRejectedApproval(addon.approvalStatus) && addon.rejectionReason && (
                           <p className="text-xs text-red-600 mt-1">Reason: {addon.rejectionReason}</p>
                         )}
                       </div>
@@ -1135,13 +1200,15 @@ export default function HubMenu() {
                           />
                         )}
                         <div className="flex flex-col gap-2">
-                          <button
-                            onClick={() => handleEditAddon(addon)}
-                            className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
-                            title="Edit add-on"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
+                          {isPendingApproval(addon.approvalStatus) && (
+                            <button
+                              onClick={() => handleEditAddon(addon)}
+                              className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                              title="Edit add-on"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDeleteAddon(addon)}
                             className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
@@ -1256,6 +1323,9 @@ export default function HubMenu() {
                               )}
                             </div>
                             <p className="text-sm font-medium text-gray-700 mb-3">₹{item.price}</p>
+                            {isRejectedApproval(item.approvalStatus) && item.rejectionReason && (
+                              <p className="text-xs text-red-600 -mt-2 mb-3">Reason: {item.rejectionReason}</p>
+                            )}
                           </div>
 
                           {/* Right: Image */}
@@ -1275,15 +1345,17 @@ export default function HubMenu() {
                         </div>
 
                         {/* Action buttons - below image */}
-                        <div className="flex items-center justify-center gap-3 mt-4">
-                          <button 
-                            onClick={() => navigate(`/restaurant/hub-menu/item/${item.id}`, { state: { item, groupId: group.id } })}
-                            className="flex items-center gap-1.5 bg-transparent text-gray-700 text-sm font-medium"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                            <span>Edit</span>
-                          </button>
-                        </div>
+                        {isPendingApproval(item.approvalStatus) && (
+                          <div className="flex items-center justify-center gap-3 mt-4">
+                            <button
+                              onClick={() => navigate(`/restaurant/hub-menu/item/${item.id}`, { state: { item, groupId: group.id } })}
+                              className="flex items-center gap-1.5 bg-transparent text-gray-700 text-sm font-medium"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                              <span>Edit</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1971,12 +2043,20 @@ export default function HubMenu() {
                               <div
                                 key={item.id}
                                 onClick={() => {
+                                  if (!isPendingApproval(item.approvalStatus)) {
+                                    toast.error("Approved or rejected items cannot be edited")
+                                    return
+                                  }
                                   setIsSearchOpen(false)
                                   navigate(`/restaurant/hub-menu/item/${item.id}`, { 
                                     state: { item, groupId: group.id } 
                                   })
                                 }}
-                                className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
+                                className={`flex items-start gap-3 p-3 rounded-lg border border-gray-200 transition-colors ${
+                                  isPendingApproval(item.approvalStatus)
+                                    ? "hover:bg-gray-50 cursor-pointer"
+                                    : "bg-gray-50/60 cursor-not-allowed"
+                                }`}
                               >
                                 <img
                                   src={item.image}
@@ -2003,6 +2083,9 @@ export default function HubMenu() {
                                     </h4>
                                   </div>
                                   <p className="text-sm font-medium text-gray-700">₹{item.price}</p>
+                                  {isRejectedApproval(item.approvalStatus) && item.rejectionReason && (
+                                    <p className="text-xs text-red-600 mt-1">Reason: {item.rejectionReason}</p>
+                                  )}
                                   {!item.isAvailable && (
                                     <span className="text-xs text-red-600 font-medium">Out of stock</span>
                                   )}

@@ -281,6 +281,7 @@ export const API_ENDPOINTS = {
     USER_STATUS: "/admin/users/:id/status",
     RESTAURANTS: "/admin/restaurants",
     RESTAURANT_BY_ID: "/admin/restaurants/:id",
+    RESTAURANT_MENU_BY_ID: "/admin/restaurants/:id/menu",
     RESTAURANT_ANALYTICS: "/admin/restaurant-analytics/:restaurantId",
     RESTAURANT_STATUS: "/admin/restaurants/:id/status",
     RESTAURANT_REQUESTS: "/admin/restaurants/requests",

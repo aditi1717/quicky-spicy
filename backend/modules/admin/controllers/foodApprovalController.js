@@ -48,7 +48,7 @@ export const getPendingFoodApprovals = asyncHandler(async (req, res) => {
               foodType: item.foodType,
               description: item.description,
               image: item.image || (item.images && item.images[0]) || '',
-              images: Array.isArray(item.images) && item.images.length > 0 
+              images: Array.isArray(item.images) && item.images.length > 0
                 ? item.images.filter(img => img && typeof img === 'string' && img.trim() !== '')
                 : [],
               requestedAt: item.requestedAt || menu.createdAt,
@@ -77,7 +77,7 @@ export const getPendingFoodApprovals = asyncHandler(async (req, res) => {
                 foodType: item.foodType,
                 description: item.description,
                 image: item.image || (item.images && item.images[0]) || '',
-                images: Array.isArray(item.images) && item.images.length > 0 
+                images: Array.isArray(item.images) && item.images.length > 0
                   ? item.images.filter(img => img && typeof img === 'string' && img.trim() !== '')
                   : [],
                 requestedAt: item.requestedAt || menu.createdAt,
@@ -103,7 +103,7 @@ export const getPendingFoodApprovals = asyncHandler(async (req, res) => {
             price: addon.price,
             description: addon.description,
             image: addon.image || (addon.images && addon.images[0]) || '',
-            images: Array.isArray(addon.images) && addon.images.length > 0 
+            images: Array.isArray(addon.images) && addon.images.length > 0
               ? addon.images.filter(img => img && typeof img === 'string' && img.trim() !== '')
               : [],
             requestedAt: addon.requestedAt || menu.createdAt,
@@ -220,26 +220,26 @@ export const approveFoodItem = asyncHandler(async (req, res) => {
           name: addon.name,
           approvalStatus: addon.approvalStatus
         });
-        
+
         addon.approvalStatus = 'approved';
         addon.approvedAt = new Date();
         addon.approvedBy = adminId;
         addon.rejectionReason = '';
-        
+
         console.log(`[APPROVE] Addon after update:`, {
           id: addon.id,
           name: addon.name,
           approvalStatus: addon.approvalStatus,
           approvedAt: addon.approvedAt
         });
-        
+
         menu.markModified(`addons.${addonIndex}`);
         menu.markModified('addons');
-        
+
         await menu.save();
-        
+
         console.log(`[APPROVE] ✅ Addon approved and saved successfully`);
-        
+
         return successResponse(res, 200, 'Add-on approved successfully', {
           addon: {
             id: addon.id,
@@ -254,17 +254,17 @@ export const approveFoodItem = asyncHandler(async (req, res) => {
 
     // Find and update the item directly in the document
     let itemUpdated = false;
-    
+
     for (let sectionIndex = 0; sectionIndex < menu.sections.length; sectionIndex++) {
       const section = menu.sections[sectionIndex];
-      
+
       // Check if this is the correct section
       if (String(section.id) !== String(foundSection.id)) {
         continue;
       }
-      
+
       console.log(`[APPROVE] Checking section ${sectionIndex}: ${section.name} (id: ${section.id})`);
-      
+
       if (foundSubsection) {
         // Item is in a subsection
         const subsectionIndex = section.subsections.findIndex(s => String(s.id) === String(foundSubsection.id));
@@ -279,22 +279,22 @@ export const approveFoodItem = asyncHandler(async (req, res) => {
               name: item.name,
               approvalStatus: item.approvalStatus
             });
-            
+
             // Update the item directly
             item.approvalStatus = 'approved';
             item.approvedAt = new Date();
             item.approvedBy = adminId;
             item.rejectionReason = '';
-            
+
             itemUpdated = true;
-            
+
             console.log(`[APPROVE] Item after update:`, {
               id: item.id,
               name: item.name,
               approvalStatus: item.approvalStatus,
               approvedAt: item.approvedAt
             });
-            
+
             // Mark all nested paths as modified - CRITICAL for Mongoose
             menu.markModified(`sections.${sectionIndex}.subsections.${subsectionIndex}.items.${itemIndex}`);
             menu.markModified(`sections.${sectionIndex}.subsections.${subsectionIndex}.items`);
@@ -302,7 +302,7 @@ export const approveFoodItem = asyncHandler(async (req, res) => {
             menu.markModified(`sections.${sectionIndex}.subsections`);
             menu.markModified(`sections.${sectionIndex}`);
             menu.markModified('sections');
-            
+
             console.log(`[APPROVE] Marked all nested paths as modified`);
             break;
           }
@@ -318,28 +318,28 @@ export const approveFoodItem = asyncHandler(async (req, res) => {
             name: item.name,
             approvalStatus: item.approvalStatus
           });
-          
+
           // Update the item directly
           item.approvalStatus = 'approved';
           item.approvedAt = new Date();
           item.approvedBy = adminId;
           item.rejectionReason = '';
-          
+
           itemUpdated = true;
-          
+
           console.log(`[APPROVE] Item after update:`, {
             id: item.id,
             name: item.name,
             approvalStatus: item.approvalStatus,
             approvedAt: item.approvedAt
           });
-          
+
           // Mark all nested paths as modified - CRITICAL for Mongoose
           menu.markModified(`sections.${sectionIndex}.items.${itemIndex}`);
           menu.markModified(`sections.${sectionIndex}.items`);
           menu.markModified(`sections.${sectionIndex}`);
           menu.markModified('sections');
-          
+
           console.log(`[APPROVE] Marked all nested paths as modified`);
           break;
         }
@@ -356,7 +356,7 @@ export const approveFoodItem = asyncHandler(async (req, res) => {
     console.log(`[APPROVE] Saving menu to database...`);
     await menu.save();
     console.log(`[APPROVE] ✅ Menu saved successfully`);
-    
+
     // Force a fresh query to verify the save
     console.log(`[APPROVE] Verifying save by querying database...`);
     const savedMenu = await Menu.findById(foundMenu._id).lean();
@@ -366,12 +366,12 @@ export const approveFoodItem = asyncHandler(async (req, res) => {
         ...(s.subsections || []).flatMap(sub => sub.items || [])
       ])
       .find(i => String(i.id) === String(id));
-    
+
     if (savedItem) {
       console.log(`[APPROVE] ✅ Verification: Item ${id} (${savedItem.name}) status in DB: ${savedItem.approvalStatus}`);
       console.log(`[APPROVE] ✅ Approved at: ${savedItem.approvedAt}`);
       console.log(`[APPROVE] ✅ Approved by: ${savedItem.approvedBy}`);
-      
+
       if (savedItem.approvalStatus !== 'approved') {
         console.error(`[APPROVE] ❌ ERROR: Item status is ${savedItem.approvalStatus}, expected 'approved'`);
         return errorResponse(res, 500, 'Failed to update approval status in database');
@@ -380,7 +380,7 @@ export const approveFoodItem = asyncHandler(async (req, res) => {
       console.error(`[APPROVE] ❌ ERROR: Item ${id} not found in saved menu`);
       return errorResponse(res, 404, 'Food item not found after update');
     }
-    
+
     console.log(`[APPROVE] ==========================================`);
 
     logger.info(`Food item approved: ${id}`, {
@@ -502,27 +502,27 @@ export const rejectFoodItem = asyncHandler(async (req, res) => {
           name: addon.name,
           approvalStatus: addon.approvalStatus
         });
-        
+
         addon.approvalStatus = 'rejected';
         addon.rejectionReason = reason.trim();
         addon.rejectedAt = new Date();
         addon.approvedBy = adminId;
         addon.approvedAt = null;
-        
+
         console.log(`[REJECT] Addon after update:`, {
           id: addon.id,
           name: addon.name,
           approvalStatus: addon.approvalStatus,
           rejectedAt: addon.rejectedAt
         });
-        
+
         menu.markModified(`addons.${addonIndex}`);
         menu.markModified('addons');
-        
+
         await menu.save();
-        
+
         console.log(`[REJECT] ✅ Addon rejected and saved successfully`);
-        
+
         return successResponse(res, 200, 'Add-on rejected successfully', {
           addon: {
             id: addon.id,
@@ -538,17 +538,17 @@ export const rejectFoodItem = asyncHandler(async (req, res) => {
 
     // Find and update the item directly in the document
     let itemUpdated = false;
-    
+
     for (let sectionIndex = 0; sectionIndex < menu.sections.length; sectionIndex++) {
       const section = menu.sections[sectionIndex];
-      
+
       // Check if this is the correct section
       if (String(section.id) !== String(foundSection.id)) {
         continue;
       }
-      
+
       console.log(`[REJECT] Checking section ${sectionIndex}: ${section.name} (id: ${section.id})`);
-      
+
       if (foundSubsection) {
         // Item is in a subsection
         const subsectionIndex = section.subsections.findIndex(s => String(s.id) === String(foundSubsection.id));
@@ -563,23 +563,23 @@ export const rejectFoodItem = asyncHandler(async (req, res) => {
               name: item.name,
               approvalStatus: item.approvalStatus
             });
-            
+
             // Update the item directly
             item.approvalStatus = 'rejected';
             item.rejectionReason = reason.trim();
             item.rejectedAt = new Date();
             item.approvedBy = adminId;
             item.approvedAt = null;
-            
+
             itemUpdated = true;
-            
+
             console.log(`[REJECT] Item after update:`, {
               id: item.id,
               name: item.name,
               approvalStatus: item.approvalStatus,
               rejectedAt: item.rejectedAt
             });
-            
+
             // Mark all nested paths as modified - CRITICAL for Mongoose
             menu.markModified(`sections.${sectionIndex}.subsections.${subsectionIndex}.items.${itemIndex}`);
             menu.markModified(`sections.${sectionIndex}.subsections.${subsectionIndex}.items`);
@@ -587,7 +587,7 @@ export const rejectFoodItem = asyncHandler(async (req, res) => {
             menu.markModified(`sections.${sectionIndex}.subsections`);
             menu.markModified(`sections.${sectionIndex}`);
             menu.markModified('sections');
-            
+
             console.log(`[REJECT] Marked all nested paths as modified`);
             break;
           }
@@ -603,29 +603,29 @@ export const rejectFoodItem = asyncHandler(async (req, res) => {
             name: item.name,
             approvalStatus: item.approvalStatus
           });
-          
+
           // Update the item directly
           item.approvalStatus = 'rejected';
           item.rejectionReason = reason.trim();
           item.rejectedAt = new Date();
           item.approvedBy = adminId;
           item.approvedAt = null;
-          
+
           itemUpdated = true;
-          
+
           console.log(`[REJECT] Item after update:`, {
             id: item.id,
             name: item.name,
             approvalStatus: item.approvalStatus,
             rejectedAt: item.rejectedAt
           });
-          
+
           // Mark all nested paths as modified - CRITICAL for Mongoose
           menu.markModified(`sections.${sectionIndex}.items.${itemIndex}`);
           menu.markModified(`sections.${sectionIndex}.items`);
           menu.markModified(`sections.${sectionIndex}`);
           menu.markModified('sections');
-          
+
           console.log(`[REJECT] Marked all nested paths as modified`);
           break;
         }
@@ -642,7 +642,7 @@ export const rejectFoodItem = asyncHandler(async (req, res) => {
     console.log(`[REJECT] Saving menu to database...`);
     await menu.save();
     console.log(`[REJECT] ✅ Menu saved successfully`);
-    
+
     // Force a fresh query to verify the save
     console.log(`[REJECT] Verifying save by querying database...`);
     const savedMenu = await Menu.findById(foundMenu._id).lean();
@@ -652,12 +652,12 @@ export const rejectFoodItem = asyncHandler(async (req, res) => {
         ...(s.subsections || []).flatMap(sub => sub.items || [])
       ])
       .find(i => String(i.id) === String(id));
-    
+
     if (savedItem) {
       console.log(`[REJECT] ✅ Verification: Item ${id} (${savedItem.name}) status in DB: ${savedItem.approvalStatus}`);
       console.log(`[REJECT] ✅ Rejected at: ${savedItem.rejectedAt}`);
       console.log(`[REJECT] ✅ Rejection reason: ${savedItem.rejectionReason}`);
-      
+
       if (savedItem.approvalStatus !== 'rejected') {
         console.error(`[REJECT] ❌ ERROR: Item status is ${savedItem.approvalStatus}, expected 'rejected'`);
         return errorResponse(res, 500, 'Failed to update rejection status in database');
@@ -666,7 +666,7 @@ export const rejectFoodItem = asyncHandler(async (req, res) => {
       console.error(`[REJECT] ❌ ERROR: Item ${id} not found in saved menu`);
       return errorResponse(res, 404, 'Food item not found after update');
     }
-    
+
     console.log(`[REJECT] ==========================================`);
 
     logger.info(`Food item rejected: ${id}`, {

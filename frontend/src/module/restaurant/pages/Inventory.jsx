@@ -757,9 +757,19 @@ export default function Inventory() {
       if (showLoading) setLoadingAddons(true)
       const response = await restaurantAPI.getAddons()
       const data = response?.data?.data?.addons || response?.data?.addons || []
-      // Filter to show only approved add-ons
-      const approvedAddons = data.filter(addon => addon.approvalStatus === 'approved')
-      setAddons(approvedAddons)
+      const getAddonCreatedMs = (addon = {}) => {
+        const candidates = [addon.requestedAt, addon.createdAt, addon.updatedAt]
+          .map((v) => new Date(v).getTime())
+          .find((ms) => Number.isFinite(ms) && ms > 0)
+        if (candidates) return candidates
+        const rawId = String(addon.id || "")
+        const match = rawId.match(/\d{10,}/)
+        if (!match) return 0
+        const fromId = Number(match[0])
+        return Number.isFinite(fromId) ? fromId : 0
+      }
+      const sortedAddons = [...data].sort((a, b) => getAddonCreatedMs(b) - getAddonCreatedMs(a))
+      setAddons(sortedAddons)
     } catch (error) {
       console.error('Error fetching add-ons:', error)
       toast.error('Failed to load add-ons')
@@ -1427,7 +1437,7 @@ export default function Inventory() {
                 <div className="flex flex-col items-center justify-center py-20 px-4">
                   <div className="text-center">
                     <p className="text-lg font-medium text-gray-500">No add-ons available</p>
-                    <p className="text-sm text-gray-400 mt-2">Approved add-ons will appear here</p>
+                    <p className="text-sm text-gray-400 mt-2">All add-ons will appear here</p>
                   </div>
                 </div>
               ) : (
@@ -1444,11 +1454,20 @@ export default function Inventory() {
                             {addon.approvalStatus === 'approved' && (
                               <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded">Approved</span>
                             )}
+                            {addon.approvalStatus === 'pending' && (
+                              <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">Pending</span>
+                            )}
+                            {addon.approvalStatus === 'rejected' && (
+                              <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 rounded">Rejected</span>
+                            )}
                           </div>
                           {addon.description && (
                             <p className="text-sm text-gray-600 mb-2">{addon.description}</p>
                           )}
                           <p className="text-base font-bold text-gray-900">₹{addon.price}</p>
+                          {addon.approvalStatus === 'rejected' && addon.rejectionReason && (
+                            <p className="text-xs text-red-600 mt-1">Reason: {addon.rejectionReason}</p>
+                          )}
                         </div>
                         <div className="flex items-start gap-2">
                           {addon.images && addon.images.length > 0 && addon.images[0] && (

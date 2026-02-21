@@ -1,6 +1,7 @@
 import Admin from "../models/Admin.js";
 import Order from "../../order/models/Order.js";
 import Restaurant from "../../restaurant/models/Restaurant.js";
+import Menu from "../../restaurant/models/Menu.js";
 import Offer from "../../restaurant/models/Offer.js";
 import AdminCommission from "../models/AdminCommission.js";
 import OrderSettlement from "../../order/models/OrderSettlement.js";
@@ -1213,6 +1214,42 @@ export const getRestaurants = asyncHandler(async (req, res) => {
       error: error.stack,
     });
     return errorResponse(res, 500, "Failed to fetch restaurants");
+  }
+});
+
+/**
+ * Get Restaurant Menu (Admin, unfiltered)
+ * GET /api/admin/restaurants/:id/menu
+ */
+export const getRestaurantMenuByIdAdmin = asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return errorResponse(res, 400, "Invalid restaurant ID");
+    }
+
+    const restaurant = await Restaurant.findById(id).select("_id name").lean();
+    if (!restaurant) {
+      return errorResponse(res, 404, "Restaurant not found");
+    }
+
+    const menu = await Menu.findOne({ restaurant: id, isActive: true }).lean();
+
+    return successResponse(res, 200, "Restaurant menu retrieved successfully", {
+      menu: menu || {
+        restaurant: id,
+        sections: [],
+        addons: [],
+        isActive: true,
+      },
+    });
+  } catch (error) {
+    logger.error(`Error fetching restaurant menu: ${error.message}`, {
+      error: error.stack,
+      restaurantId: req.params?.id,
+    });
+    return errorResponse(res, 500, "Failed to fetch restaurant menu");
   }
 });
 

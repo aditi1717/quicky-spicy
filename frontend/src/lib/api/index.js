@@ -558,7 +558,7 @@ export const restaurantAPI = {
     return apiClient.get(API_ENDPOINTS.RESTAURANT.LIST, { params });
   },
 
-  // Get restaurants with dishes under ₹250
+  // Get restaurants with dishes under ?250
   getRestaurantsUnder250: (zoneId) => {
     const params = zoneId ? { zoneId } : {};
     return apiClient.get(API_ENDPOINTS.RESTAURANT.UNDER_250, { params });
@@ -950,7 +950,7 @@ export const deliveryAPI = {
   getActiveEarningAddons: () => {
     const endpoint = API_ENDPOINTS.DELIVERY.EARNINGS_ACTIVE_OFFERS;
     if (import.meta.env.DEV) {
-      console.log("📡 Fetching active earning addons from:", endpoint);
+      console.log("?? Fetching active earning addons from:", endpoint);
     }
     return apiClient.get(endpoint);
   },
@@ -1076,6 +1076,13 @@ export const adminAPI = {
   getRestaurantById: (id) => {
     return apiClient.get(
       API_ENDPOINTS.ADMIN.RESTAURANT_BY_ID.replace(":id", id),
+    );
+  },
+
+  // Get restaurant menu by ID (admin)
+  getRestaurantMenuById: (id) => {
+    return apiClient.get(
+      API_ENDPOINTS.ADMIN.RESTAURANT_MENU_BY_ID.replace(":id", id),
     );
   },
 

@@ -1,14 +1,37 @@
 import { useState, useMemo, useEffect } from "react"
-import { Search, Trash2, Loader2 } from "lucide-react"
+import { Search, Trash2, Loader2, Eye } from "lucide-react"
 import { adminAPI, restaurantAPI } from "@/lib/api"
 import apiClient from "@/lib/api"
 import { toast } from "sonner"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function FoodsList() {
   const [searchQuery, setSearchQuery] = useState("")
   const [foods, setFoods] = useState([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
+  const [selectedFood, setSelectedFood] = useState(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+
+  const getItemCreatedMs = (item = {}) => {
+    const direct = [item.createdAt, item.addedAt, item.requestedAt, item.updatedAt]
+      .map((v) => new Date(v).getTime())
+      .find((ms) => Number.isFinite(ms) && ms > 0)
+    if (direct) return direct
+
+    const rawId = String(item.id || "")
+    const match = rawId.match(/\d{10,}/)
+    if (match) {
+      const fromId = Number(match[0])
+      if (Number.isFinite(fromId) && fromId > 0) return fromId
+    }
+    return 0
+  }
+
+  const isListEligibleStatus = (status) => {
+    const normalized = String(status || "").toLowerCase()
+    return normalized === "approved" || normalized === "rejected"
+  }
 
   // Fetch all foods from all restaurants
   useEffect(() => {
@@ -34,7 +57,7 @@ export default function FoodsList() {
         for (const restaurant of restaurants) {
           try {
             const restaurantId = restaurant._id || restaurant.id
-            const menuResponse = await restaurantAPI.getMenuByRestaurantId(restaurantId)
+            const menuResponse = await adminAPI.getRestaurantMenuById(restaurantId)
             const menu = menuResponse?.data?.data?.menu || menuResponse?.data?.menu
             
             if (menu && menu.sections) {
@@ -94,7 +117,8 @@ export default function FoodsList() {
           }
         }
         
-        setFoods(allFoods)
+        allFoods.sort((a, b) => getItemCreatedMs(b.originalItem) - getItemCreatedMs(a.originalItem))
+        setFoods(allFoods.filter((food) => isListEligibleStatus(food.approvalStatus)))
       } catch (error) {
         console.error("Error fetching foods:", error)
         toast.error("Failed to load foods from restaurants")
@@ -152,6 +176,7 @@ export default function FoodsList() {
       )
     }
 
+    result.sort((a, b) => getItemCreatedMs(b.originalItem) - getItemCreatedMs(a.originalItem))
     return result
   }, [foods, searchQuery])
 
@@ -247,6 +272,11 @@ export default function FoodsList() {
     } finally {
       setDeleting(false)
     }
+  }
+
+  const handleViewDetails = (food) => {
+    setSelectedFood(food)
+    setShowDetailModal(true)
   }
 
   return (
@@ -360,18 +390,27 @@ export default function FoodsList() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <button
-                        onClick={() => handleDelete(food.id)}
-                        disabled={deleting}
-                        className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Delete"
-                      >
-                        {deleting ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleViewDetails(food)}
+                          className="p-1.5 rounded text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(food.id)}
+                          disabled={deleting}
+                          className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Delete"
+                        >
+                          {deleting ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -380,6 +419,45 @@ export default function FoodsList() {
           </table>
         </div>
       </div>
+
+      <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
+        <DialogContent className="max-w-xl p-0 overflow-hidden">
+          <DialogHeader className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <DialogTitle className="text-lg font-semibold text-slate-900">Food Details</DialogTitle>
+          </DialogHeader>
+          {selectedFood && (
+            <div className="p-6 space-y-5">
+              <div className="flex items-center gap-4">
+                <img
+                  src={selectedFood.image}
+                  alt={selectedFood.name}
+                  className="w-20 h-20 rounded-xl object-cover border border-slate-200"
+                  onError={(e) => {
+                    e.target.src = "https://via.placeholder.com/64"
+                  }}
+                />
+                <div>
+                  <p className="text-lg font-semibold text-slate-900">{selectedFood.name}</p>
+                  <p className="text-sm text-slate-500 mt-0.5">ID #{formatFoodId(selectedFood.id)}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <p><span className="font-semibold text-slate-700">Restaurant:</span> <span className="text-slate-900">{selectedFood.restaurantName || "-"}</span></p>
+                <p><span className="font-semibold text-slate-700">Price:</span> <span className="text-slate-900">₹{selectedFood.price}</span></p>
+                <p><span className="font-semibold text-slate-700">Category:</span> <span className="text-slate-900">{selectedFood.sectionName || "-"}</span></p>
+                <p><span className="font-semibold text-slate-700">Subcategory:</span> <span className="text-slate-900">{selectedFood.subsectionName || "-"}</span></p>
+                <p><span className="font-semibold text-slate-700">Food Type:</span> <span className="text-slate-900">{selectedFood.foodType || "-"}</span></p>
+                <p><span className="font-semibold text-slate-700">Approval:</span> <span className="text-slate-900 capitalize">{selectedFood.approvalStatus || "-"}</span></p>
+              </div>
+              {selectedFood.originalItem?.description && (
+                <p className="text-sm text-slate-700 leading-relaxed">
+                  <span className="font-semibold text-slate-800">Description:</span> {selectedFood.originalItem.description}
+                </p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

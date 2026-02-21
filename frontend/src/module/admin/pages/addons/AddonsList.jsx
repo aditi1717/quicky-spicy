@@ -1,14 +1,37 @@
 import { useState, useMemo, useEffect } from "react"
-import { Search, Trash2, Loader2 } from "lucide-react"
+import { Search, Trash2, Loader2, Eye } from "lucide-react"
 import { adminAPI, restaurantAPI } from "@/lib/api"
 import apiClient from "@/lib/api"
 import { toast } from "sonner"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function AddonsList() {
   const [searchQuery, setSearchQuery] = useState("")
   const [addons, setAddons] = useState([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
+  const [selectedAddon, setSelectedAddon] = useState(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+
+  const getItemCreatedMs = (item = {}) => {
+    const direct = [item.createdAt, item.addedAt, item.requestedAt, item.updatedAt]
+      .map((v) => new Date(v).getTime())
+      .find((ms) => Number.isFinite(ms) && ms > 0)
+    if (direct) return direct
+
+    const rawId = String(item.id || "")
+    const match = rawId.match(/\d{10,}/)
+    if (match) {
+      const fromId = Number(match[0])
+      if (Number.isFinite(fromId) && fromId > 0) return fromId
+    }
+    return 0
+  }
+
+  const isListEligibleStatus = (status) => {
+    const normalized = String(status || "").toLowerCase()
+    return normalized === "approved" || normalized === "rejected"
+  }
 
   // Fetch all addons from all restaurants
   useEffect(() => {
@@ -28,16 +51,15 @@ export default function AddonsList() {
           return
         }
 
-        // Fetch addons for each restaurant
+        // Fetch addons for each restaurant using admin menu endpoint
         const allAddons = []
         
         for (const restaurant of restaurants) {
           try {
             const restaurantId = restaurant._id || restaurant.id
-            const addonsResponse = await restaurantAPI.getAddonsByRestaurantId(restaurantId)
-            const restaurantAddons = addonsResponse?.data?.data?.addons || 
-                                    addonsResponse?.data?.addons || 
-                                    []
+            const menuResponse = await apiClient.get(`/admin/restaurants/${restaurantId}/menu`)
+            const menu = menuResponse?.data?.data?.menu || menuResponse?.data?.menu
+            const restaurantAddons = Array.isArray(menu?.addons) ? menu.addons : []
             
             // Map addons with restaurant information
             restaurantAddons.forEach((addon) => {
@@ -61,7 +83,8 @@ export default function AddonsList() {
           }
         }
         
-        setAddons(allAddons)
+        allAddons.sort((a, b) => getItemCreatedMs(b.originalAddon) - getItemCreatedMs(a.originalAddon))
+        setAddons(allAddons.filter((addon) => isListEligibleStatus(addon.approvalStatus)))
       } catch (error) {
         console.error("Error fetching addons:", error)
         toast.error("Failed to load addons from restaurants")
@@ -127,6 +150,7 @@ export default function AddonsList() {
       )
     }
 
+    result.sort((a, b) => getItemCreatedMs(b.originalAddon) - getItemCreatedMs(a.originalAddon))
     return result
   }, [addons, searchQuery])
 
@@ -191,6 +215,11 @@ export default function AddonsList() {
     } finally {
       setDeleting(false)
     }
+  }
+
+  const handleViewDetails = (addon) => {
+    setSelectedAddon(addon)
+    setShowDetailModal(true)
   }
 
   return (
@@ -317,18 +346,27 @@ export default function AddonsList() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <button
-                        onClick={() => handleDelete(addon.id)}
-                        disabled={deleting}
-                        className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Delete"
-                      >
-                        {deleting ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleViewDetails(addon)}
+                          className="p-1.5 rounded text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(addon.id)}
+                          disabled={deleting}
+                          className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Delete"
+                        >
+                          {deleting ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -337,7 +375,43 @@ export default function AddonsList() {
           </table>
         </div>
       </div>
+
+      <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
+        <DialogContent className="max-w-xl p-0 overflow-hidden">
+          <DialogHeader className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <DialogTitle className="text-lg font-semibold text-slate-900">Add-on Details</DialogTitle>
+          </DialogHeader>
+          {selectedAddon && (
+            <div className="p-6 space-y-5">
+              <div className="flex items-center gap-4">
+                <img
+                  src={selectedAddon.image}
+                  alt={selectedAddon.name}
+                  className="w-20 h-20 rounded-xl object-cover border border-slate-200"
+                  onError={(e) => {
+                    e.target.src = "https://via.placeholder.com/64"
+                  }}
+                />
+                <div>
+                  <p className="text-lg font-semibold text-slate-900">{selectedAddon.name}</p>
+                  <p className="text-sm text-slate-500 mt-0.5">ID #{formatAddonId(selectedAddon.id)}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <p><span className="font-semibold text-slate-700">Restaurant:</span> <span className="text-slate-900">{selectedAddon.restaurantName || "-"}</span></p>
+                <p><span className="font-semibold text-slate-700">Price:</span> <span className="text-slate-900">₹{selectedAddon.price?.toFixed(2)}</span></p>
+                <p><span className="font-semibold text-slate-700">Status:</span> <span className="text-slate-900">{selectedAddon.isAvailable ? "Available" : "Unavailable"}</span></p>
+                <p><span className="font-semibold text-slate-700">Approval:</span> <span className="text-slate-900 capitalize">{selectedAddon.approvalStatus || "-"}</span></p>
+              </div>
+              {selectedAddon.description && (
+                <p className="text-sm text-slate-700 leading-relaxed">
+                  <span className="font-semibold text-slate-800">Description:</span> {selectedAddon.description}
+                </p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
-
