@@ -2106,6 +2106,46 @@ export const createRestaurant = asyncHandler(async (req, res) => {
       },
     };
 
+    // Send credential email for admin-created restaurant accounts.
+    if (email && finalPassword) {
+      try {
+        const emailService = (await import("../../auth/services/emailService.js"))
+          .default;
+        const loginUrl =
+          process.env.RESTAURANT_PANEL_URL ||
+          process.env.FRONTEND_URL ||
+          "https://appzetofood.com/restaurant/login";
+
+        const recipientName = ownerName || restaurant.name || "Restaurant Partner";
+        const subject = "Your restaurant account credentials";
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1f2937;">
+            <h2 style="margin-bottom: 12px;">Restaurant account created</h2>
+            <p>Hello ${recipientName},</p>
+            <p>Your restaurant account has been created by the admin team.</p>
+            <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin: 16px 0;">
+              <p style="margin: 4px 0;"><strong>Restaurant:</strong> ${restaurant.name}</p>
+              <p style="margin: 4px 0;"><strong>Login Email:</strong> ${email.toLowerCase().trim()}</p>
+              <p style="margin: 4px 0;"><strong>Password:</strong> ${finalPassword}</p>
+            </div>
+            <p>Login here: <a href="${loginUrl}">${loginUrl}</a></p>
+            <p>For security, please change your password after first login.</p>
+          </div>
+        `;
+
+        await emailService.sendEmail({
+          to: email.toLowerCase().trim(),
+          subject,
+          html,
+        });
+      } catch (mailError) {
+        logger.error(`Failed to send restaurant credential email: ${mailError.message}`, {
+          restaurantId: restaurant._id,
+          email: email?.toLowerCase?.().trim?.() || email,
+        });
+      }
+    }
+
     // Include generated password in response if email was provided and password was auto-generated
     // This allows admin to share the password with the restaurant
     if (email && !password && finalPassword) {

@@ -1256,6 +1256,7 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
 
     // Build restaurant query
     const restaurantQuery = {};
+    const andConditions = [];
 
     // Zone filter
     if (zone && zone !== 'All Zones') {
@@ -1268,13 +1269,15 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
         // Find restaurants in this zone by checking orders with this zoneId
         const ordersInZone = await Order.find({
           'assignmentInfo.zoneId': zoneDoc._id?.toString()
-        }).distinct('restaurantId').lean();
+        }).distinct('restaurantId');
 
         if (ordersInZone.length > 0) {
-          restaurantQuery.$or = [
+          andConditions.push({
+            $or: [
             { _id: { $in: ordersInZone } },
             { restaurantId: { $in: ordersInZone } }
-          ];
+            ]
+          });
         } else {
           // No restaurants found in this zone
           return successResponse(res, 200, 'Restaurant report retrieved successfully', {
@@ -1297,10 +1300,16 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
 
     // Search filter
     if (search) {
-      restaurantQuery.$or = [
+      andConditions.push({
+        $or: [
         { name: { $regex: search, $options: 'i' } },
         { restaurantId: { $regex: search, $options: 'i' } }
-      ];
+        ]
+      });
+    }
+
+    if (andConditions.length > 0) {
+      restaurantQuery.$and = andConditions;
     }
 
     // Get all restaurants matching the query
@@ -1350,11 +1359,34 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
         // Build order query for this restaurant
         const orderQuery = {
           ...dateQuery,
-          $or: [
-            { restaurantId: restaurantId },
-            { restaurantId: restaurantIdField }
-          ]
+          $or: []
         };
+
+        if (restaurantId) {
+          orderQuery.$or.push({ restaurantId: restaurantId });
+          if (mongoose.Types.ObjectId.isValid(restaurantId)) {
+            orderQuery.$or.push({ restaurantId: new mongoose.Types.ObjectId(restaurantId) });
+          }
+        }
+        if (restaurantIdField) {
+          orderQuery.$or.push({ restaurantId: restaurantIdField });
+        }
+        if (orderQuery.$or.length === 0) {
+          return {
+            sl: 0,
+            id: restaurantId,
+            restaurantName: restaurant.name,
+            icon: restaurant.profileImage?.url || restaurant.profileImage || null,
+            totalFood: 0,
+            totalOrder: 0,
+            totalOrderAmount: "₹0.00",
+            totalDiscountGiven: "₹0.00",
+            totalAdminCommission: "₹0.00",
+            totalVATTAX: "₹0.00",
+            averageRatings: 0,
+            reviews: 0
+          };
+        }
 
         // Get orders for this restaurant
         const orders = await Order.find(orderQuery).lean();

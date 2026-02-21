@@ -117,6 +117,24 @@ export default function HubFinance() {
     }
   }, [financeData])
 
+  const invoiceOrders = useMemo(() => {
+    const current = financeData?.currentCycle?.orders || []
+    const past = pastCyclesData?.orders || []
+    return [...current, ...past]
+  }, [financeData, pastCyclesData])
+
+  const invoiceSummary = useMemo(() => {
+    const subtotal = invoiceOrders.reduce((sum, order) => sum + (order.orderTotal || 0), 0)
+    const taxes = invoiceOrders.reduce((sum, order) => {
+      const totalAmount = order.totalAmount || 0
+      const orderTotal = order.orderTotal || 0
+      const inferredTax = Math.max(0, totalAmount - orderTotal)
+      return sum + inferredTax
+    }, 0)
+    const gross = invoiceOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0)
+    return { subtotal, taxes, gross, count: invoiceOrders.length }
+  }, [invoiceOrders])
+
   const handleViewDetails = () => {
     navigate("/restaurant/finance-details")
   }
@@ -953,10 +971,58 @@ export default function HubFinance() {
         )}
 
         {activeTab === "invoices" && (
-          <div className=" rounded-lg p-4">
-            <p className="text-sm text-gray-600 text-center py-8">
-              Invoices & Taxes content will be displayed here
-            </p>
+          <div className="space-y-4">
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Invoices & Taxes Summary</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="rounded-md bg-gray-50 p-3">
+                  <p className="text-xs text-gray-600">Orders</p>
+                  <p className="text-base font-semibold text-gray-900">{invoiceSummary.count}</p>
+                </div>
+                <div className="rounded-md bg-gray-50 p-3">
+                  <p className="text-xs text-gray-600">Taxable subtotal</p>
+                  <p className="text-base font-semibold text-gray-900">₹{invoiceSummary.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+                <div className="rounded-md bg-gray-50 p-3">
+                  <p className="text-xs text-gray-600">Taxes</p>
+                  <p className="text-base font-semibold text-gray-900">₹{invoiceSummary.taxes.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+                <div className="rounded-md bg-gray-50 p-3">
+                  <p className="text-xs text-gray-600">Gross amount</p>
+                  <p className="text-base font-semibold text-gray-900">₹{invoiceSummary.gross.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Order invoice details</h3>
+              {loading ? (
+                <p className="text-sm text-gray-500">Loading invoice data...</p>
+              ) : invoiceOrders.length === 0 ? (
+                <p className="text-sm text-gray-500">No invoice data available for selected range.</p>
+              ) : (
+                <div className="space-y-2">
+                  {invoiceOrders.map((order, index) => (
+                    <div key={`${order.orderId || index}-invoice`} className="border border-gray-100 rounded-md p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Order: {order.orderId || "N/A"}</p>
+                          <p className="text-xs text-gray-600 mt-0.5">
+                            {order.paymentMethod || "N/A"} | {order.orderStatus || "N/A"}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-900">
+                            ₹{(order.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-xs text-gray-500">Total</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -2408,6 +2408,7 @@ export default function DeliveryHome() {
                 estimatedEarnings: backendEarnings || selectedRestaurant?.estimatedEarnings || 0,
                 amount: earningsValue, // Also set amount for compatibility
                 customerName: order.userId?.name || selectedRestaurant?.customerName,
+                customerPhone: order.userId?.phone || selectedRestaurant?.customerPhone || null,
                 customerAddress: order.address?.formattedAddress || 
                                 (order.address?.street ? `${order.address.street}, ${order.address.city || ''}, ${order.address.state || ''}`.trim() : '') ||
                                 selectedRestaurant?.customerAddress,
@@ -10188,7 +10189,22 @@ export default function DeliveryHome() {
 
           {/* Action Buttons */}
           <div className="flex gap-3 mb-6">
-            <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            <button
+              onClick={() => {
+                const phone = selectedRestaurant?.customerPhone || selectedRestaurant?.userId?.phone || null
+                if (!phone) {
+                  toast.error("Customer phone number not available")
+                  return
+                }
+                const cleanPhone = String(phone).replace(/[^\d+]/g, "")
+                if (!cleanPhone) {
+                  toast.error("Customer phone number not available")
+                  return
+                }
+                window.location.href = `tel:${cleanPhone}`
+              }}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
               <Phone className="w-5 h-5 text-gray-700" />
               <span className="text-gray-700 font-medium">Call</span>
             </button>

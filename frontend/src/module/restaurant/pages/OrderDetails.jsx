@@ -136,6 +136,38 @@ export default function OrderDetails() {
         
         if (response.data?.success && response.data.data?.order) {
           const order = response.data.data.order
+
+          const addressParts = [
+            order.address?.street,
+            order.address?.area,
+            order.address?.city,
+            order.address?.state,
+            order.address?.pincode
+          ].filter(Boolean)
+
+          const fullAddress =
+            order.address?.formattedAddress ||
+            order.address?.address ||
+            order.deliveryAddress?.formattedAddress ||
+            order.deliveryAddress?.address ||
+            (addressParts.length > 0 ? addressParts.join(", ") : "") ||
+            "Address not available"
+
+          const rawPaymentStatus = String(
+            order.payment?.status || order.paymentStatus || ""
+          ).toLowerCase()
+          const paymentMethod = String(order.payment?.method || "").toLowerCase()
+
+          let paymentStatus = "PENDING"
+          if (["completed", "paid", "captured", "success", "succeeded"].includes(rawPaymentStatus)) {
+            paymentStatus = "PAID"
+          } else if (["failed", "declined"].includes(rawPaymentStatus)) {
+            paymentStatus = "FAILED"
+          } else if (["refunded", "refund"].includes(rawPaymentStatus)) {
+            paymentStatus = "REFUNDED"
+          } else if (paymentMethod === "cash") {
+            paymentStatus = order.status === "delivered" ? "PAID" : "COD"
+          }
           
           // Transform API order data to match component structure
           const transformedOrder = {
@@ -144,12 +176,12 @@ export default function OrderDetails() {
             date: new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
             time: new Date(order.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
             restaurant: order.restaurantName || 'Restaurant',
-            address: order.address?.street || order.address?.city || 'Address not available',
+            address: fullAddress,
             customer: {
               name: order.userId?.name || 'Customer',
-              orderCount: 1,
-              location: `${order.address?.city || ''}, ${order.address?.state || ''}`.trim(),
-              distance: 'N/A'
+              orderCount: order.userId?.orderCount || 1,
+              location: fullAddress,
+              distance: order.deliveryDistance ? `${order.deliveryDistance} km` : ''
             },
             items: order.items?.map(item => ({
               name: item.name,
@@ -161,7 +193,7 @@ export default function OrderDetails() {
               itemSubtotal: order.pricing?.subtotal || 0,
               taxes: order.pricing?.tax || 0,
               total: order.pricing?.total || 0,
-              paymentStatus: order.payment?.status === 'completed' ? 'PAID' : 'PENDING'
+              paymentStatus
             },
             reason: order.cancellationReason || '',
             timeline: [

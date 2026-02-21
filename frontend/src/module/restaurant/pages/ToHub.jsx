@@ -42,29 +42,32 @@ export default function ToHub() {
   const [restaurantData, setRestaurantData] = useState(null)
   const [loadingRestaurant, setLoadingRestaurant] = useState(true)
 
-  // Fetch restaurant data on mount
-  useEffect(() => {
-    const fetchRestaurantData = async () => {
-      try {
-        setLoadingRestaurant(true)
-        const response = await restaurantAPI.getCurrentRestaurant()
-        const data = response?.data?.data?.restaurant || response?.data?.restaurant
-        if (data) {
-          setRestaurantData(data)
-        }
-      } catch (error) {
-        // Only log error if it's not a network/timeout error (backend might be down/slow)
-        if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          console.error("Error fetching restaurant data:", error)
-        }
-        // Continue with default values if fetch fails
-      } finally {
-        setLoadingRestaurant(false)
+  const fetchRestaurantData = useCallback(async () => {
+    try {
+      setLoadingRestaurant(true)
+      const response = await restaurantAPI.getCurrentRestaurant()
+      const data = response?.data?.data?.restaurant || response?.data?.restaurant
+      if (data) {
+        setRestaurantData(data)
       }
+    } catch (error) {
+      // Only log error if it's not a network/timeout error (backend might be down/slow)
+      if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
+        console.error("Error fetching restaurant data:", error)
+      }
+      // Continue with default values if fetch fails
+    } finally {
+      setLoadingRestaurant(false)
     }
-
-    fetchRestaurantData()
   }, [])
+
+  // Fetch restaurant data on mount and refresh details on window focus.
+  useEffect(() => {
+    fetchRestaurantData()
+    const handleFocus = () => fetchRestaurantData()
+    window.addEventListener("focus", handleFocus)
+    return () => window.removeEventListener("focus", handleFocus)
+  }, [fetchRestaurantData])
   const topTabBarRef = useRef(null)
   const contentContainerRef = useRef(null)
   const touchStartX = useRef(0)

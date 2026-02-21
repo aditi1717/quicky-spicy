@@ -9,6 +9,7 @@ import {
   Star,
   RotateCcw,
   AlertCircle,
+  Phone,
   Loader2,
   Package
 } from "lucide-react"
@@ -18,6 +19,7 @@ import { useCompanyName } from "@/lib/hooks/useCompanyName"
 
 export default function MyOrders() {
   const navigate = useNavigate()
+  const { companyName } = useCompanyName()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -168,6 +170,28 @@ export default function MyOrders() {
     return order.payment?.status === 'failed' || order.payment?.status === 'pending'
   }
 
+  const getCustomerPhone = (order) => {
+    return (
+      order.userId?.phone ||
+      order.customerPhone ||
+      order.phone ||
+      ""
+    )
+  }
+
+  const handleCallCustomer = (phone) => {
+    if (!phone) {
+      toast.error("Customer phone number not available")
+      return
+    }
+    const cleanPhone = String(phone).replace(/[^\d+]/g, "")
+    if (!cleanPhone) {
+      toast.error("Customer phone number not available")
+      return
+    }
+    window.location.href = `tel:${cleanPhone}`
+  }
+
   // Get order status text
   const getOrderStatus = (order) => {
     const status = order.status || order.orderStatus
@@ -223,7 +247,7 @@ export default function MyOrders() {
         {!loading && (
           <div className="ml-auto text-xs text-gray-500 flex flex-col items-end">
             <span>({orders.length} orders, {filteredOrders.length} filtered)</span>
-            {process.env.NODE_ENV === 'development' && (
+            {import.meta.env.DEV && (
         <button
                 onClick={() => {
                   console.log('🔍 Current State:', {
@@ -288,6 +312,7 @@ export default function MyOrders() {
               const orderPrice = order.pricing?.total || order.total || 0
               const paymentFailed = isPaymentFailed(order)
               const isDelivered = order.status === 'delivered' || order.status === 'completed'
+              const customerPhone = getCustomerPhone(order)
               // Rating - check if available in order data (might be in deliveryState or separate field)
               const rating = order.rating || order.deliveryState?.rating || null
 
@@ -399,19 +424,33 @@ export default function MyOrders() {
               </div>
                     )}
 
-                    {/* Right Side: Reorder Button */}
-              <button
-                      onClick={() => {
-                        // Navigate to restaurant or reorder functionality
-                        if (order.restaurantId) {
-                          navigate(`/restaurant/${order.restaurantId?.slug || order.restaurantId?._id || order.restaurantId}`)
-                        }
-                      }}
-                      className="bg-[#E23744] hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1 shadow-sm transition-colors"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      Reorder
-                    </button>
+                    {/* Right Side: Actions */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleCallCustomer(customerPhone)}
+                        disabled={!customerPhone}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1 shadow-sm transition-colors ${
+                          customerPhone
+                            ? "bg-green-600 hover:bg-green-700 text-white"
+                            : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                        }`}
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        Call
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Navigate to restaurant or reorder functionality
+                          if (order.restaurantId) {
+                            navigate(`/restaurant/${order.restaurantId?.slug || order.restaurantId?._id || order.restaurantId}`)
+                          }
+                        }}
+                        className="bg-[#E23744] hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1 shadow-sm transition-colors"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        Reorder
+                      </button>
+                    </div>
                     </div>
                   </div>
               )

@@ -2017,6 +2017,9 @@ function OrderCard({
   onCancel,
 }) {
   const isReady = status === "Ready"
+  const statusLabel = String(status || "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
 
   return (
     <div className="w-full bg-white rounded-2xl p-4 mb-3 border border-gray-200 hover:border-gray-400 transition-colors relative">
@@ -2081,7 +2084,7 @@ function OrderCard({
 
             <div className="flex flex-col items-end gap-1">
               <span
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium border ${isReady
+                className={`inline-flex items-start gap-1 px-2 py-1 rounded-full text-[11px] font-medium border text-right whitespace-normal break-words max-w-[140px] leading-tight ${isReady
                   ? "border-green-500 text-green-600"
                   : "border-gray-800 text-gray-900"
                   }`}
@@ -2090,9 +2093,9 @@ function OrderCard({
                   className={`h-1.5 w-1.5 rounded-full ${isReady ? "bg-green-500" : "bg-gray-800"
                     }`}
                 />
-                {status}
+                {statusLabel}
               </span>
-              <span className="text-[11px] text-gray-500 text-right">
+              <span className="text-[11px] text-gray-500 text-right whitespace-normal break-words max-w-[120px] leading-tight">
                 {timePlaced}
               </span>
             </div>
